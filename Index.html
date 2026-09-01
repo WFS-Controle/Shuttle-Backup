@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  
+  <style>
+    /* PALETA WFS CORPORATE (CINZA CROMO / GRAFITE - V2) */
+    :root { 
+        --bg: #d4d4d8; 
+        --panel: #f2f2f2; 
+        --panel-glass: rgba(255, 255, 255, 0.90); 
+        --sidebar: #27272a; 
+        --input: #f4f4f5; 
+        --text: #52525b; 
+        --text-strong: #18181b; 
+        --text-muted: #a1a1aa; 
+        --primary: #dc2626; 
+        --primary-hover: #b91c1c; 
+        --accent: #f59e0b; 
+        --success: #10b981; 
+        --danger: #ef4444; 
+        --info: #0284c7; 
+        --purple: #8b5cf6;
+        --border: rgba(0, 0, 0, 0.08); 
+    }
+    
+    body { 
+        font-family: 'Inter', sans-serif; 
+        color: var(--text); 
+        margin: 0; 
+        display: flex; 
+        flex-direction: column; 
+        height: 100vh; 
+        overflow: hidden; 
+        background-color: var(--bg);
+        background-image: url("data:image/svg+xml,%3Csvg width='100%25' height='100%25' viewBox='0 0 1440 900' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23dc2626' stroke-width='1.5' stroke-opacity='0.08'%3E%3Ccircle cx='1440' cy='450' r='200'/%3E%3Ccircle cx='1440' cy='450' r='400'/%3E%3Ccircle cx='1440' cy='450' r='600'/%3E%3Ccircle cx='1440' cy='450' r='800'/%3E%3Ccircle cx='0' cy='900' r='300'/%3E%3Ccircle cx='0' cy='900' r='500'/%3E%3C/g%3E%3C/svg%3E");
+        background-size: cover;
+        background-attachment: fixed;
+        background-position: center;
+    }
+
+    /* EFEITO DE SELEÇÃO DE LINHA CLICKÁVEL */
+    .tbl-dash tbody tr { transition: 0.2s all; cursor: pointer; }
+    .row-sel td { 
+        background-color: #fee2e2 !important; 
+        color: #991b1b !important; 
+        border-top: 1px solid #fca5a5;
+        border-bottom: 1px solid #fca5a5;
+    }
+    .row-sel:hover td { background-color: #fca5a5 !important; }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; } ::-webkit-scrollbar-track { background: var(--bg); } ::-webkit-scrollbar-thumb { background: #a1a1aa; border-radius: 4px; } ::-webkit-scrollbar-thumb:hover { background: #71717a; }
+    
+    /* Layouts Gerais */
+    .view { display: none; height: 100%; flex-direction: column; } .view.active { display: flex; animation: fade 0.3s; } @keyframes fade { from{opacity:0} to{opacity:1} }
+    .auth-container { justify-content: center; align-items: center; }
+    .login-box { background: var(--panel); padding: 40px; border-radius: 12px; width: 350px; text-align: center; border: 1px solid var(--border); box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
+    .inp-login { width: 100%; padding: 12px; margin-bottom: 15px; background: white; border: 1px solid #d4d4d8; color: var(--text-strong); border-radius: 6px; outline: none; }
+    .btn-login { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; border-radius: 6px; transition: 0.2s; }
+    .btn-login:hover { background: var(--primary-hover); } .hidden { display: none; }
+    .app-logo { font-size: 38px; font-weight: 900; color: var(--text-strong); text-align: center; margin-bottom: 25px; letter-spacing: 1px; text-transform: uppercase; }
+    
+    /* Top Bar & Nav */
+    .top-bar { background: var(--panel); padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+    .info-bar { display: flex; justify-content: center; align-items: center; background: var(--panel-glass); border-bottom: 1px solid var(--border); padding: 10px; font-size: 12px; font-weight: 600; letter-spacing: 1px; backdrop-filter: blur(5px); color: var(--text-strong); }
+    .info-bar.active { border-bottom: 2px solid var(--success); } .info-bar.locked { color: var(--danger); border-bottom: 2px solid var(--danger); background: rgba(239, 68, 68, 0.05); }
+    .last-update { font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 5px; background: rgba(0,0,0,0.05); padding: 4px 10px; border-radius: 15px; border: 1px solid var(--border); margin-right: 15px; }
+    .nav-tabs { display: flex; justify-content: center; gap: 10px; background: #e4e4e7; padding: 10px; border-bottom: 1px solid var(--border); }
+    .nav-btn { background: transparent; border: 1px solid transparent; color: var(--text); padding: 8px 20px; border-radius: 20px; cursor: pointer; font-weight: 600; font-size: 13px; transition: 0.2s; }
+    .nav-btn:hover { background: rgba(0,0,0,0.05); color: var(--text-strong); } .nav-btn.active { background: var(--primary); color: white; box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3); }
+    #btn-tab-admin, #btn-tab-solic { display: none; } #btn-tab-admin.active, #btn-tab-solic.active { background: #27272a; color: white; }
+    .dash-content { flex: 1; display: none; overflow: hidden; position: relative; min-height: 0; } #tab-gestao, #tab-admin, #tab-solicitacoes { padding: 20px; overflow-y: auto; } #tab-planilha { padding: 0; background: #fff; flex-direction: column; }
+    
+    /* Componentes UI */
+    .stats-container { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 25px; }
+    .stat-card { background: var(--panel); padding: 15px; border-radius: 12px; border-left: 4px solid var(--primary); box-shadow: 0 4px 6px rgba(0,0,0,0.05); color: var(--text-strong); cursor: pointer; transition: transform 0.2s, border 0.2s, background 0.2s; }
+    .stat-card:hover { transform: translateY(-3px); background: white; box-shadow: 0 8px 15px rgba(0,0,0,0.08); }
+    .stat-card.active-filter { border: 2px solid var(--primary) !important; background-color: white; box-shadow: 0 0 15px rgba(220, 38, 38, 0.15); transform: scale(1.02); }
+    .stat-num { font-size: 28px; font-weight: 900; margin-bottom: 5px; color: var(--text-strong); } .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+    
+    .table-container { background: var(--panel); border-radius: 8px; overflow: hidden; border: 1px solid var(--border); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    /* PADRONIZAÇÃO DA TABELA INTEIRA PARA O CINZA DO SISTEMA */
+    .tbl-dash { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; background: transparent; }
+    
+    .tbl-dash th { background: #e4e4e7 !important; color: var(--text-strong); padding: 12px; border-bottom: 1px solid var(--border); font-weight: 700; white-space: nowrap; }
+    
+    .tbl-dash td { background: transparent !important; padding: 12px; border-bottom: 1px solid var(--border); color: var(--text-strong); vertical-align: middle; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    
+    .tbl-dash tr:hover td { background: #e4e4e7 !important; cursor: default; }
+    
+    /* Novas Colunas */
+    .col-acoes { width: 90px; text-align: center; } .col-mat { width: 90px; text-align: center; } .col-nome { 
+        text-align: center; 
+        padding-left: 20px !important; 
+        background-color: transparent !important; 
+        color: var(--text-strong) !important;
+    } 
+    .col-tipo { width: 90px; text-align: center; } .col-hora { width: 80px; text-align: center; font-weight: bold; } 
+    .col-van { width: 110px; text-align: center; } .col-status { width: 100px; text-align: center; } .col-data { width: 110px; text-align: center; } .col-setor { width: 180px; text-align: center; } .col-obs { text-align: left; color: var(--text-muted); font-style: italic; }
+    
+    .btn-decision { width: 32px; height: 32px; border-radius: 50%; border: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; margin: 0 5px; color: white; transition: transform 0.2s; } .btn-decision:hover { transform: scale(1.1); }
+    .btn-approve { background: var(--success); box-shadow: 0 2px 5px rgba(16, 185, 129, 0.4); } .btn-reject { background: var(--danger); box-shadow: 0 2px 5px rgba(239, 68, 68, 0.4); }
+    
+    .filters-row { display: flex; gap: 10px; margin-bottom: 15px; justify-content:space-between; align-items: center; flex-wrap: wrap; }
+    .inp-filter { background: white; border: 1px solid #d4d4d8; color: var(--text-strong); border-radius: 5px; padding: 8px; font-size:13px; outline:none; text-transform:uppercase; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); }
+    .inp-filter:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2); }
+    .btn-add { background: var(--primary); color: white; padding: 8px 20px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 5px; box-shadow: 0 2px 5px rgba(220,38,38,0.3); } .btn-add:hover { background: var(--primary-hover); transform: translateY(-1px); }
+    .btn-solic { background: var(--info); color: white; padding: 8px 16px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; display: none; }
+    .btn-smart-paste { background: var(--sidebar); color: white; padding: 8px 16px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: 0.2s; } .btn-smart-paste:hover { background: #18181b; transform: translateY(-1px); }
+    .btn-icon { background: none; border: none; cursor: pointer; color: var(--text-muted); margin-right: 5px; transition: 0.2s; } .btn-icon:hover { color: var(--primary); }
+    
+    .admin-box { max-width: 500px; margin: 20px auto; background: var(--panel); padding: 30px; border-radius: 10px; border: 1px solid var(--border); text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+    .drop-zone { border: 2px dashed #a1a1aa; background: #fafafa; padding: 30px; margin: 20px 0; cursor: pointer; border-radius: 8px; transition: 0.2s; } .drop-zone:hover { border-color: var(--primary); background: #fef2f2; }
+    
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: none; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(3px); }
+    .modal-box { background: var(--panel); width: 600px; padding: 25px; border-radius: 10px; border: 1px solid var(--border); max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.2); }
+    .row { display: flex; gap: 10px; margin-bottom: 10px; } .col { flex: 1; }
+    label { display: block; font-size: 11px; color: var(--text-strong); font-weight: 600; margin-bottom: 5px; }
+    input, select { width: 100%; padding: 10px; background: white; border: 1px solid #d4d4d8; color: var(--text-strong); border-radius: 5px; box-sizing: border-box; outline: none; transition: 0.2s; } 
+    input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(220,38,38,0.2); }
+    
+    .sheet-wrapper { background: white; color: black; padding: 0; flex: 1; width: 100%; overflow: auto; border-top: 1px solid #ccc; }
+    .tbl-sheet { border-collapse: separate; border-spacing: 0; font-family: 'Arial', sans-serif; font-size: 11px; white-space: nowrap; min-width: 100%; }
+    .tbl-sheet th { background: #f4f4f5; color: var(--text-strong); border: 1px solid #d4d4d8; padding: 8px; text-align: center; font-weight: bold; position: sticky; top: 0; z-index: 10; }
+    .th-yellow { background: #ffd966 !important; color: black !important; border: 1px solid #d4a017 !important; }
+    .tbl-sheet td { border: 1px solid #e4e4e7; padding: 4px 8px; color: #000; text-align: left; }
+    .day-col { min-width: 40px !important; text-align: center !important; padding: 6px !important; }
+    .folga-cell { background-color: transparent !important; color: #333 !important; text-align: center; font-weight: bold; }
+    .row-demitido td { background-color: #fee2e2 !important; text-decoration: line-through; color: #991b1b; } .row-semrota td { background-color: #fef08a !important; } .row-ferias td { background-color: #e0f2fe !important; color: #0369a1; } .ferias-cell { background-color: #e0f2fe !important; color: #0369a1 !important; font-weight: bold; text-align: center; }
+    
+    .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 10px; }
+    .day { background: white; border: 1px solid #d4d4d8; padding: 8px; text-align: center; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; transition: 0.2s; color: var(--text-strong); } .day:hover { background: #e4e4e7; }
+    .day.sel { background: var(--primary); color: white; border-color: var(--primary); transform: scale(1.05); box-shadow: 0 2px 5px rgba(220,38,38,0.3); } .day.vacation { background: #f4f4f5; color: #a1a1aa; cursor: not-allowed; text-decoration: line-through; }
+    input[readonly] { background: #f4f4f5; color: var(--text-muted); border-color: #e4e4e7; cursor: default; }
+    a.link-detalhe { color: var(--info); text-decoration: none; font-weight: bold; cursor: pointer; } a.link-detalhe:hover { text-decoration: underline; color: var(--primary); }
+
+    /* ESTILOS DA JANELA DE COLAGEM (Adaptado ao Claro) */
+    .paste-container { display: flex; gap: 10px; height: 350px; }
+    .paste-col { display: flex; flex-direction: column; height: 100%; }
+    .paste-label { margin-bottom: 5px; font-weight: 800; font-size: 11px; display: flex; align-items: center; gap: 5px; text-transform: uppercase; color: var(--text-strong); }
+    .lined-textarea { flex: 1; background-color: white; background-image: linear-gradient(#f4f4f5 1px, transparent 1px); background-size: 100% 24px; background-attachment: local; border: 1px solid #d4d4d8; padding: 0 10px; color: var(--text-strong); font-family: 'Roboto Mono', monospace; font-size: 12px; line-height: 24px; resize: none; border-radius: 4px; white-space: pre; overflow: scroll; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); }
+    .lined-textarea:focus { border-color: var(--primary); outline: none; }
+    .paste-col-id { width: 100px; } .paste-col-name { width: 200px; } .paste-col-days { flex: 1; display:flex; flex-direction:column; overflow:hidden;}
+    .days-header { display: flex; background: #e4e4e7; border: 1px solid #d4d4d8; border-bottom: none; height: 24px; align-items: center; overflow-x: auto; overflow-y: hidden; border-radius: 4px 4px 0 0; }
+    .days-header::-webkit-scrollbar { height: 4px; } .days-header::-webkit-scrollbar-thumb { background: #a1a1aa; border-radius: 2px; }
+    .dh-cell { min-width: 30px; flex-shrink: 0; text-align: center; font-size: 10px; color: var(--text-strong); border-right: 1px solid #d4d4d8; font-weight: bold; }
+    .read-only-box { background-color: #fafafa; color: var(--text-muted); cursor: not-allowed; }
+    
+    .modal-actions { display: flex; justify-content: center; gap: 15px; margin-top: 25px; }
+    .btn-sec { background: white; color: var(--text-strong); border: 1px solid #d4d4d8; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .btn-sec:hover { background: #f4f4f5; border-color: #a1a1aa; }
+    .btn-danger { background: var(--danger); color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3); }
+    .btn-danger:hover { background: #dc2626; transform: translateY(-2px); }
+  </style>
+</head>
+<body>
+
+  <div id="view-login" class="view auth-container active">
+    <div class="app-logo"><span style="color:var(--primary)">🚌</span> WFS SHUTTLE</div>
+    <div class="login-box">
+      <select id="login-setor" class="inp-login" onchange="verificarAdmin()"><option value="" disabled selected>Selecione sua Área...</option></select>
+      <input type="text" id="login-nome" class="inp-login" placeholder="Seu Nome (Gestor)">
+      <input type="password" id="login-senha" class="inp-login hidden" placeholder="Senha de Admin">
+      <button class="btn-login" onclick="login()">ENTRAR NO SISTEMA</button>
+      <div id="msg-login" style="color:var(--danger); font-size:12px; margin-top:10px;"></div>
+    </div>
+  </div>
+
+  <div id="view-dash" class="view">
+    <div class="top-bar">
+      <div style="font-weight:900; color:var(--text-strong); letter-spacing:1px;"><span class="material-icons" style="vertical-align:middle; color:var(--primary)">flight_takeoff</span> WFS SHUTTLE</div>
+      <div style="display:flex; align-items:center;">
+        <div class="last-update" title="Data do último upload de escala geral"><span class="material-icons" style="font-size:14px; color:var(--text-muted)">history</span> <span id="lbl-last-update">Atualizando...</span></div>
+        <div id="div-admin-filter" class="admin-filter" style="display:none"><select id="sel-admin-setor" class="inp-login" style="padding:8px; margin:0; background:white; color:var(--text-strong); border-color:#d4d4d8;" onchange="filtroAdmin()"><option value="VISÃO GLOBAL">🌎 VISÃO GLOBAL</option></select></div>
+        <span style="font-size:13px; margin-left:15px; margin-right:15px; color:var(--text);"><span id="lbl-user" style="color:var(--text-strong); font-weight:bold;">User</span> | <span id="lbl-setor" style="color:var(--primary); font-weight:bold;">Setor</span></span>
+        <button onclick="fazerLogout()" style="background:transparent; border:1px solid var(--danger); color:var(--danger); font-weight:bold; padding:5px 10px; border-radius:4px; cursor:pointer;">Sair</button>
+      </div>
+    </div>
+    <div id="status-bar" class="info-bar"><span class="material-icons" style="font-size:16px; margin-right:5px;">info</span> Aguardando dados...</div>
+    <div class="nav-tabs">
+      <button class="nav-btn active" onclick="nav('tab-gestao')">👤 Gestão</button> <button class="nav-btn" onclick="nav('tab-planilha')">📊 Planilha</button>
+      <button class="nav-btn" id="btn-tab-solic" onclick="nav('tab-solicitacoes')">🚨 Solicitações</button> <button class="nav-btn" id="btn-tab-admin" onclick="nav('tab-admin')">⚙️ Admin</button>
+    </div>
+
+    <div id="tab-gestao" class="dash-content active">
+      <div class="stats-container">
+        <div class="stat-card" onclick="filtrarCard(this, null)"><div class="stat-num" id="stat-total">-</div><div class="stat-label">Total</div></div>
+        <div class="stat-card" style="border-left-color:var(--success)" onclick="filtrarCard(this, 'NOVATO')"><div class="stat-num" id="stat-novos">-</div><div class="stat-label">Novatos</div></div>
+        <div class="stat-card" style="border-left-color:var(--accent)" onclick="filtrarCard(this, 'SEM ROTA')"><div class="stat-num" id="stat-semrota">-</div><div class="stat-label">Sem Rota</div></div>
+        <div class="stat-card" style="border-left-color:var(--danger)" onclick="filtrarCard(this, 'DEMITIDO')"><div class="stat-num" id="stat-alertas">-</div><div class="stat-label">Demitidos</div></div>
+        <div class="stat-card" style="border-left-color:var(--info)" onclick="filtrarCard(this, 'FÉRIAS')"><div class="stat-num" id="stat-ferias">-</div><div class="stat-label">Em Férias</div></div>
+      </div>
+      <div class="filters-row">
+           <div style="display:flex; gap:10px; flex:1;">
+              <input id="filtro" class="inp-filter" placeholder="🔍 Filtrar Nome/Matrícula..." onkeyup="filtrar()" autocomplete="off" style="width: 100%;">
+              <select id="filtro-contrato" class="inp-filter" style="width:180px" onchange="filtrar()"><option value="">TODOS CONTRATOS</option></select>
+           </div>
+           <div style="display:flex; gap:10px; align-items:center;">
+              
+              <button id="btn-excluir-lote" class="btn-add" style="background:var(--danger); display:none;" onclick="excluirLote()">
+                 <span class="material-icons" style="font-size:18px">delete_sweep</span> Excluir (<span id="qtd-lote">0</span>)
+              </button>
+
+              <button class="btn-smart-paste" onclick="abrirModalColagem()">
+                 <span class="material-icons" style="font-size:18px;">content_paste</span> Colar Escala
+              </button>
+              <button id="btn-solic" class="btn-solic" onclick="abrirModal(true)">📝 Solicitação Emergencial</button>
+              <button id="btn-novo" class="btn-add" onclick="abrirModal(false)">
+                 <span class="material-icons" style="font-size:18px">add</span> Novo
+              </button>
+           </div>
+      </div>
+      <div style="text-align: right; margin-top: 5px;"><span style="font-size:11px; color:var(--text-muted); font-weight:bold; cursor:pointer;" onclick="carregarDados()">↻ Atualizar Lista</span></div>
+      <div class="table-container">
+        <table class="tbl-dash">
+          <thead><tr>
+              <th class="col-acoes">AÇÕES</th>
+              <th class="col-mat">MATRÍCULA</th>
+              <th class="col-nome">NOME</th>
+              <th class="col-tipo">TIPO</th>
+              <th class="col-hora">HORA</th>
+              <th class="col-van">Nº VAN</th>
+              <th class="col-status">STATUS</th>
+              <th class="col-data">SITUAÇÃO</th>
+          </tr></thead>
+          <tbody id="tb-corpo"></tbody>
+        </table>
+        <div id="status-msg" class="msg-box" style="display:none; padding:20px; text-align:center; color:var(--text-muted); font-weight:bold;"></div>
+      </div>
+    </div>
+
+    <div id="tab-planilha" class="dash-content">
+       <div style="padding:10px; border-bottom:1px solid #ccc; background:#f8f9fa; color:#333;"><b>VISÃO GERAL</b> | Setor: <b id="lbl-planilha-setor"></b></div>
+       <div class="sheet-wrapper"><table class="tbl-sheet"><thead id="head-planilha"></thead><tbody id="tb-planilha"></tbody></table></div>
+    </div>
+    
+    <div id="tab-solicitacoes" class="dash-content">
+        <h2 style="color:var(--info)">🚨 Solicitações Pendentes</h2>
+        <div class="table-container">
+           <table class="tbl-dash">
+              <thead><tr>
+                  <th class="col-acoes">DECISÃO</th>
+                  <th class="col-mat">MATRÍCULA</th>
+                  <th class="col-nome" style="text-align: left; padding-left: 20px;">NOME</th>
+                  <th class="col-setor">SETOR</th>
+                  <th class="col-obs">MOTIVO/OBS</th>
+              </tr></thead>
+              <tbody id="tb-solic"></tbody>
+           </table>
+           <div id="msg-solic" class="msg-box" style="display:none; padding:20px; text-align:center; color:var(--text-muted);">Nenhuma solicitação pendente.</div>
+        </div>
+    </div>
+    
+    <div id="tab-admin" class="dash-content">
+       <div class="admin-box">
+          <h2 style="color:var(--text-strong)">Painel de Controle</h2>
+          <div style="background:rgba(0,0,0,0.03); padding:15px; border-radius:8px; border:1px solid var(--border); margin-bottom:20px;">
+             <h4 style="color:var(--text-strong); margin:0 0 10px 0;"><span class="material-icons" style="font-size:16px; vertical-align:middle; color:var(--primary)">event</span> Janela da Escala</h4>
+             <div style="display:flex; gap:10px; justify-content:center;">
+                <div><label>Abertura</label><input type="date" id="admin-inicio" style="text-align:center;"></div>
+                <div><label>Fechamento</label><input type="date" id="admin-fim" style="text-align:center;"></div>
+             </div>
+             <button class="btn-add" style="margin-top:15px; width:100%; justify-content: center;" onclick="salvarPrazo()">ATUALIZAR PERÍODO</button>
+          </div>
+          
+          <hr style="border-color:var(--border); margin:20px 0;">
+          <h3 style="color:var(--danger)"><span class="material-icons" style="vertical-align:middle">delete_sweep</span> Reset de Escala</h3>
+          <p style="font-size:11px; color:var(--text-muted);">Apaga todas as folgas preenchidas para iniciar um novo mês (Preserva as Férias).</p>
+          <button class="btn-add" style="background:var(--danger); width:200px; padding:15px; justify-content:center; margin:0 auto;" onclick="confirmarLimpezaFolgas()">LIMPAR TODA A GRADE</button>
+
+          <hr style="border-color:var(--border); margin:30px 0;">
+          <h3 style="color:var(--success)"><span class="material-icons" style="vertical-align:middle">download</span> Download</h3>
+          <button id="btn-down" class="btn-add" style="background:var(--success); width:200px; padding:15px; justify-content:center; margin:0 auto;" onclick="baixarExcel()">BAIXAR ESCALA</button>
+          
+          <hr style="border-color:var(--border); margin:30px 0;">
+          <h3 style="color:var(--sidebar)"><span class="material-icons" style="vertical-align:middle">upload</span> Upload Geral (Admin)</h3>
+          <div class="drop-zone" onclick="document.getElementById('fUpload').click()"><span id="fName" style="color:var(--text-strong); font-weight:bold;">Selecionar Excel (.xlsx)</span><input type="file" id="fUpload" hidden accept=".xlsx" onchange="lerUpload(this)"></div>
+          <button id="btn-proc" class="btn-add" style="background:var(--sidebar); opacity:0.5; width:200px; padding:15px; justify-content:center; margin:0 auto;" disabled onclick="enviarUpload()">PROCESSAR COMPLETO</button>
+       </div>
+       
+       <div id="painel-monitor-envio" class="admin-box" style="display:none; max-width: 800px;">
+        <h3 style="color:var(--text-strong); border-bottom:1px solid var(--border); padding-bottom:10px;">📡 Status de Recebimento de Escalas</h3>
+        <table class="tbl-dash" style="margin-top:15px;">
+            <thead><tr><th style="text-align:left; padding-left:20px;">SETOR</th><th style="text-align:center;">COLABORADORES</th><th style="text-align:center;">PREENCHIMENTO</th><th style="text-align:center;">STATUS</th></tr></thead>
+            <tbody id="tb-monitor-envio"></tbody>
+        </table>
+       </div>
+    </div>
+
+  <div id="modal-form" class="modal-overlay">
+    <div class="modal-box">
+      <h3 id="modal-title" style="color:var(--primary); margin-top:0;">Ficha de Cadastro</h3>
+      <input type="hidden" id="edit-linha">
+      <div class="row"><div class="col"><label>Matrícula</label><input id="mat" type="number" onblur="buscarNomeAuto()"></div><div class="col" style="flex:2"><label>Nome</label><input id="nom" readonly placeholder="Busca Automática..."></div></div>
+      <div class="row"><div class="col"><label>Contrato</label><input id="con" oninput="upper(this)"></div><div class="col"><label>Telefone</label><input id="tel" oninput="mask(this,'tel')"></div></div>
+      <div class="row"><div class="col"><label>CEP</label><input id="cep" maxlength="9" oninput="mask(this,'cep')" onblur="buscaEnd(this)"></div><div class="col" style="flex:2"><label>Endereço</label><input id="end" readonly></div></div>
+      <div class="row"><div class="col"><label>Número</label><input id="num"></div><div class="col"><label>Bairro</label><input id="bai" readonly></div></div>
+      <div class="row"><div class="col"><label>Tipo</label><select id="tipo" onchange="attH()"><option value="" disabled selected>SELECIONE</option><option value="ENTRADA">ENTRADA</option><option value="SAIDA">SAÍDA</option></select></div><div class="col"><label>Horário</label><select id="hora"></select></div></div>
+      <div style="margin-top:15px; border-top:1px solid var(--border); padding-top:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+           <label style="margin:0;">Calendário de Folgas</label> <label style="color:var(--info); cursor:pointer; margin:0;"><input type="checkbox" id="chk-ferias" onchange="toggleFeriasArea()"> FÉRIAS?</label>
+        </div>
+        <div id="area-ferias-dates" style="display:none; background:#f0f9ff; padding:10px; border-radius:5px; border:1px solid var(--info); margin-top:10px; margin-bottom:10px;">
+            <div class="row">
+               <div class="col"><label style="color:var(--info)">Início Férias</label><input type="date" id="ferias-inicio" onchange="renderCal()"></div>
+               <div class="col"><label style="color:var(--info)">Fim Férias</label><input type="date" id="ferias-fim" onchange="renderCal()"></div>
+            </div>
+            <small style="color:var(--info); font-weight:bold;">Dias de férias ficarão bloqueados no calendário abaixo.</small>
+        </div>
+        <div id="cal" class="calendar"></div>
+      </div>
+      <div class="row" style="margin-top:20px; justify-content:flex-end; gap:10px;">
+         <button onclick="document.getElementById('modal-form').style.display='none'" class="btn-sec">Cancelar</button> <button id="btn-save" class="btn-add" onclick="salvar()">SALVAR FICHA</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-confirm" class="modal-overlay"><div class="modal-box" style="width:400px; text-align:center"><div style="margin-bottom:20px;"><span class="material-icons" style="font-size:48px; color:var(--danger);">warning_amber</span></div><h4 style="color:var(--text-strong); margin:0;">Confirmação Necessária</h4><p id="confirm-msg" style="color:var(--text-muted); margin:20px 0;">Tem certeza?</p><div class="modal-actions"><button class="btn-sec" onclick="document.getElementById('modal-confirm').style.display='none'">CANCELAR</button><button class="btn-danger" id="btn-confirm-yes">SIM, EXCLUIR</button></div></div></div>
+  
+  <script>
+    let USER = null, LISTA = [], FOLGAS = [], DADOS_UPLOAD = [], LISTA_ORIGINAL = [], HISTORICO_FERIAS = [], SOLICITACOES_CACHE = [], SYSTEM_LOCKED = false, FILTRO_CARD_ATIVO = null, LINHAS_SELECIONADAS = []; 
+
+    document.addEventListener('keydown', function(event) { if (event.key === "Enter") { if (document.getElementById('view-login').classList.contains('active')) login(); } });
+    
+    function getDiasNoMes() { const now = new Date(); return new Date(now.getFullYear(), now.getMonth() + 2, 0).getDate(); }
+    
+    window.onload = function() {
+       if(document.getElementById('filtro')) document.getElementById('filtro').value = "";
+       google.script.run.withSuccessHandler(l => {
+          let s = document.getElementById('login-setor'); let sa = document.getElementById('sel-admin-setor');
+          l.forEach(x => { let o=document.createElement('option'); o.value=x; o.text=x; s.add(o); if(x!=="ADMINISTRADOR"&&x!=="ADM"){let oa=document.createElement('option');oa.value=x;oa.text=x;sa.add(oa);} });
+       }).getListaSetores(); 
+       renderCal();
+    };
+    
+    function verificarAdmin() {
+       let s = document.getElementById('login-setor').value;
+       let inpNome = document.getElementById('login-nome');
+       let inpSenha = document.getElementById('login-senha');
+       
+       if(s === "ADMINISTRADOR") { 
+           inpNome.classList.add('hidden'); 
+           inpSenha.classList.remove('hidden'); 
+           inpSenha.placeholder = "Senha de Admin";
+       } else { 
+           inpNome.classList.remove('hidden'); 
+           inpSenha.classList.add('hidden'); 
+           inpSenha.value = ""; 
+       }
+    }
+    
+    function login() {
+       let s = document.getElementById('login-setor').value; let n = document.getElementById('login-nome').value; let p = document.getElementById('login-senha').value;
+       if(!s) return Swal.fire('Atenção','Selecione a Área!','warning');
+       let b = document.querySelector('.btn-login'); b.innerText="VERIFICANDO..."; b.disabled=true;
+       google.script.run.withSuccessHandler(r => {
+          b.innerText = "ENTRAR NO SISTEMA"; b.disabled=false;
+          if(r && r.sucesso) { USER = { usuario:(s==="ADMINISTRADOR"?"ADMIN":n), setor:s, perfil:r.perfil }; iniciarDash(); } 
+          else { document.getElementById('msg-login').innerText = (r&&r.erro)?r.erro:"Erro de Login"; }
+       }).tentarLogin(s, n, p);
+    }
+    
+    function iniciarDash() {
+       document.getElementById('view-login').classList.remove('active'); document.getElementById('view-dash').classList.add('active'); document.getElementById('lbl-user').innerText = USER.usuario;
+       if(USER.perfil === 'ADMIN') { 
+           document.getElementById('btn-tab-admin').style.display='block'; document.getElementById('btn-tab-solic').style.display='block'; 
+           document.getElementById('div-admin-filter').style.display='block'; document.getElementById('lbl-setor').innerText="ADMINISTRADOR"; 
+       } else { 
+           document.getElementById('btn-tab-admin').style.display='none'; document.getElementById('btn-tab-solic').style.display='none';
+           document.getElementById('div-admin-filter').style.display='none'; document.getElementById('lbl-setor').innerText=USER.setor; 
+       } nav('tab-gestao'); carregarDados();
+    }
+    
+    function nav(t) {
+       document.querySelectorAll('.dash-content').forEach(x=>{x.style.display='none';x.classList.remove('active')});
+       document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+       let aba = document.getElementById(t);
+       if(t === 'tab-planilha') { aba.style.display='flex'; aba.style.flexDirection='column'; } else { aba.style.display='block'; }
+       setTimeout(()=>aba.classList.add('active'),10);
+       if(t==='tab-gestao') document.querySelectorAll('.nav-btn')[0].classList.add('active');
+       if(t==='tab-planilha') document.querySelectorAll('.nav-btn')[1].classList.add('active');
+       if(t==='tab-solicitacoes') document.getElementById('btn-tab-solic').classList.add('active');
+       if(t==='tab-admin') document.getElementById('btn-tab-admin').classList.add('active');
+    }
+    
+    function carregarDados() {
+       zerarKPIs(); 
+       document.getElementById('tb-corpo').innerHTML = ""; document.getElementById('tb-planilha').innerHTML = ""; document.getElementById('tb-solic').innerHTML = "";
+       let msg = document.getElementById('status-msg'); msg.style.display = "block"; msg.innerText = "Carregando dados da base...";
+       google.script.run.withSuccessHandler(res => {
+             if (!res || res.erro) { msg.innerHTML = "Erro ao carregar."; return; }
+             LISTA = res.lista || []; LISTA_ORIGINAL = [...LISTA]; HISTORICO_FERIAS = res.historicoFerias || [];
+             atualizarDropdownContratos(LISTA);
+             document.getElementById('lbl-last-update').innerText = "Atualizado: " + (res.lastUpdate || "Pendente");
+             SYSTEM_LOCKED = res.system.isLocked; atualizarBannerPrazo(res.system.inicio, res.system.fim);
+             document.getElementById('admin-inicio').value = res.system.inicio || ""; document.getElementById('admin-fim').value = res.system.fim || "";
+             SOLICITACOES_CACHE = res.solicitacoes || [];
+             let tbSolic = document.getElementById('tb-solic'); let msgSol = document.getElementById('msg-solic');
+             if(USER.perfil === 'ADMIN' && SOLICITACOES_CACHE.length > 0) {
+                 msgSol.style.display = "none";
+                 SOLICITACOES_CACHE.forEach((s, idx) => {
+                     let tr = document.createElement('tr');
+                     let btnAprovar = `<button class="btn-decision btn-approve" title="Aprovar" onclick="procSolic(${s.linha}, 'APROVAR')"><span class="material-icons" style="font-size:18px">check</span></button>`;
+                     let btnReprovar = `<button class="btn-decision btn-reject" title="Rejeitar" onclick="procSolic(${s.linha}, 'REJEITAR')"><span class="material-icons" style="font-size:18px">close</span></button>`;
+                     let linkNome = `<a class="link-detalhe" onclick="verDetalheSolicitacao(${idx})">${s.nome}</a>`;
+                     tr.innerHTML = `<td class="col-acoes" style="padding:8px;">${btnAprovar} ${btnReprovar}</td><td class="col-mat"><strong>${s.matricula}</strong></td><td class="col-nome">${linkNome}</td><td class="col-setor"><span style="background:#f4f4f5; border:1px solid #d4d4d8; padding:4px 8px; border-radius:4px; font-size:11px; color:#52525b;">${s.area}</span></td><td class="col-obs">${s.carro || 'NOVO CADASTRO'}</td>`;
+                     tbSolic.appendChild(tr);
+                 });
+             } else { msgSol.style.display = "block"; }
+             
+             if(USER.perfil === 'ADMIN' && res.monitorEnvio) {
+                 document.getElementById('painel-monitor-envio').style.display = 'block';
+                 let tbMonitor = document.getElementById('tb-monitor-envio'); tbMonitor.innerHTML = "";
+                 res.monitorEnvio.forEach(m => {
+                     let tr = document.createElement('tr');
+                     let corStatus = m.status === "PENDENTE" ? "var(--danger)" : "var(--success)"; 
+                     let icone = m.status === "PENDENTE" ? "hourglass_empty" : "check_circle";
+                     let bgBar = m.status === "PENDENTE" ? "#fee2e2" : "#d1fae5";
+                     tr.innerHTML = `<td style="text-align:left; padding-left:20px; font-weight:bold;">${m.setor}</td><td style="text-align:center;">${m.total}</td><td style="text-align:center;"><div style="background:#e4e4e7; height:6px; width:100px; margin:0 auto; border-radius:3px; overflow:hidden;"><div style="background:${corStatus}; width:${m.percentual}%; height:100%;"></div></div><span style="font-size:10px; color:var(--text-muted); font-weight:bold;">${m.percentual}%</span></td><td style="text-align:center;"><span style="background:${bgBar}; color:${corStatus}; padding:4px 10px; border-radius:15px; font-size:11px; font-weight:bold; display:inline-flex; align-items:center; gap:5px;"><span class="material-icons" style="font-size:12px">${icone}</span> ${m.status}</span></td>`;
+                     tbMonitor.appendChild(tr);
+                 });
+             }
+             
+             if(USER.perfil !== 'ADMIN') { 
+                 document.getElementById('lbl-planilha-setor').innerText = USER.setor; 
+                 LISTA = LISTA_ORIGINAL; 
+                 filtrar(); 
+             } else { 
+                 filtroAdmin(); 
+             }
+             msg.style.display = 'none';
+         }).carregarDadosSetor(USER.setor, USER.perfil);
+    }
+
+    function filtrarCard(el, status) {
+        document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter'));
+        if(FILTRO_CARD_ATIVO === status) FILTRO_CARD_ATIVO = null;
+        else { FILTRO_CARD_ATIVO = status; if(el) el.classList.add('active-filter'); }
+        filtrar();
+    }
+    
+    function filtrar() { 
+        let txt = document.getElementById('filtro').value.toLowerCase(); let con = document.getElementById('filtro-contrato').value; let listaBase = LISTA; 
+        if(FILTRO_CARD_ATIVO) {
+            if(FILTRO_CARD_ATIVO === 'NOVATO') listaBase = listaBase.filter(x => x.situacao === 'NOVATO');
+            else if(FILTRO_CARD_ATIVO === 'FÉRIAS') listaBase = listaBase.filter(x => x.status === 'FÉRIAS');
+            else listaBase = listaBase.filter(x => x.status === FILTRO_CARD_ATIVO);
+        }
+        let f = listaBase.filter(x => (x.nome.toLowerCase().includes(txt) || String(x.matricula).includes(txt)) && (con==="" || x.contrato===con)); 
+        renderTable(f); renderSheetView(f); atualizarStats(f, con);
+    }
+    
+    function atualizarStats(listaFiltrada, contratoAtivo) {
+       let s = { total: listaFiltrada.length, novatos:0, alertas:0, semrota:0, ferias:0 };
+       listaFiltrada.forEach(i => { if(i.situacao==='NOVATO') s.novatos++; if(i.status==='DEMITIDO') s.alertas++; if(i.status==='SEM ROTA') s.semrota++; });
+       let feriasFiltradas = HISTORICO_FERIAS;
+       let setorSelecionado = document.getElementById('sel-admin-setor') ? document.getElementById('sel-admin-setor').value : "VISÃO GLOBAL";
+       if (USER.perfil === 'ADMIN' && setorSelecionado !== "VISÃO GLOBAL") feriasFiltradas = feriasFiltradas.filter(h => h.area === setorSelecionado);
+       if (contratoAtivo && contratoAtivo !== "") feriasFiltradas = feriasFiltradas.filter(h => h.contrato === contratoAtivo);
+       s.ferias = feriasFiltradas.length;
+       document.getElementById('stat-total').innerText = s.total; document.getElementById('stat-novos').innerText = s.novatos; 
+       document.getElementById('stat-alertas').innerText = s.alertas; document.getElementById('stat-semrota').innerText = s.semrota;
+       document.getElementById('stat-ferias').innerText = s.ferias;
+    }
+    
+    function atualizarDropdownContratos(listaAtual) {
+       let selCont = document.getElementById('filtro-contrato'); selCont.innerHTML = '<option value="">TODOS CONTRATOS</option>';
+       let contratosUnicos = new Set(); listaAtual.forEach(item => { if(item.contrato && item.contrato.trim() !== "") contratosUnicos.add(item.contrato); });
+       Array.from(contratosUnicos).sort().forEach(c => { let o = document.createElement('option'); o.value = c; o.text = c; selCont.add(o); });
+    }
+    
+    function zerarKPIs() { document.getElementById('stat-total').innerText="-"; document.getElementById('stat-novos').innerText="-"; document.getElementById('stat-alertas').innerText="-"; document.getElementById('stat-semrota').innerText="-"; document.getElementById('stat-ferias').innerText="-"; }
+    
+    function atualizarBannerPrazo(i, f) {
+       const banner = document.getElementById('status-bar'); const btnNovo = document.getElementById('btn-novo'); const btnSolic = document.getElementById('btn-solic');
+       if (!i || !f) { banner.innerHTML = `<span class="material-icons" style="font-size:16px; margin-right:5px;">lock_open</span> SISTEMA ABERTO (EDIÇÃO LIVRE)`; banner.className='info-bar active'; SYSTEM_LOCKED=false; } 
+       else {
+          const h = new Date(); const di = new Date(i+"T00:00:00"); const df = new Date(f+"T23:59:59");
+          if (h < di || h > df) { banner.innerHTML = `<span class="material-icons" style="font-size:16px; margin-right:5px;">lock</span> FECHADO (${i.split('-').reverse().join('/')} a ${f.split('-').reverse().join('/')})`; banner.className='info-bar locked'; SYSTEM_LOCKED=true; } 
+          else { banner.innerHTML = `<span class="material-icons" style="font-size:16px; margin-right:5px;">timer</span> ABERTO - FECHA EM ${Math.ceil((df-h)/86400000)} DIAS`; banner.className='info-bar active'; SYSTEM_LOCKED=false; }
+       }
+       if (SYSTEM_LOCKED && USER.perfil !== 'ADMIN') { btnNovo.style.display='none'; btnSolic.style.display='block'; } else { btnNovo.style.display='block'; btnSolic.style.display='none'; }
+    }
+    
+    function renderCal() { 
+       let c = document.getElementById('cal'); c.innerHTML = ""; let m = getDiasNoMes(); 
+       let isFeriasAtivo = document.getElementById('chk-ferias').checked;
+       let ini = document.getElementById('ferias-inicio').value; let fim = document.getElementById('ferias-fim').value; 
+       let dtIni = (isFeriasAtivo && ini) ? new Date(ini+"T00:00:00") : null; let dtFim = (isFeriasAtivo && fim) ? new Date(fim+"T23:59:59") : null; 
+       
+       let baseAno = dtIni ? dtIni.getFullYear() : new Date().getFullYear(); 
+       let baseMes = dtIni ? dtIni.getMonth() : new Date().getMonth(); 
+       
+       for(let i=1; i<=m; i++){ 
+          let d = document.createElement('div'); let isVacation = false; 
+          if(dtIni && dtFim) { 
+              let atual = new Date(baseAno, baseMes, i); 
+              if(atual >= dtIni && atual <= dtFim) isVacation = true; 
+          } 
+          if(isVacation) { d.className = "day vacation"; d.innerText = i; d.title = "Férias"; } 
+          else { 
+              d.className = "day" + (FOLGAS.includes(i) ? " sel" : ""); d.innerText = i; 
+              d.onclick = () => { if(FOLGAS.includes(i)) FOLGAS = FOLGAS.filter(x => x !== i); else FOLGAS.push(i); renderCal(); }; 
+          } 
+          c.appendChild(d); 
+       } 
+    }
+    
+    function procSolic(l, a) { 
+        Swal.fire({ title: 'Processando...', didOpen: () => Swal.showLoading() }); 
+        google.script.run
+            .withSuccessHandler(r => { 
+                Swal.fire(String(r).includes('Erro') ? 'Erro' : 'Sucesso!', r, String(r).includes('Erro') ? 'error' : 'success'); 
+                carregarDados(); 
+            })
+            .withFailureHandler(e => {
+                Swal.fire('Erro Crítico', 'Falha ao processar: ' + e.message, 'error');
+            })
+            .processarSolicitacao(l, a); 
+    }
+
+    function salvarPrazo() { let i = document.getElementById('admin-inicio').value; let f = document.getElementById('admin-fim').value; google.script.run.withSuccessHandler(r => { Swal.fire('Sucesso', r, 'success'); carregarDados(); }).setPrazoSistema(i, f); }
+    
+    function buscarNomeAuto() {
+       let mat = document.getElementById('mat').value; let inpNome = document.getElementById('nom');
+       if(mat.length > 3) {
+          inpNome.placeholder = "Verificando..."; inpNome.readOnly = true; 
+          google.script.run.withSuccessHandler(res => {
+             if(res && res.status === 'EXISTE_BASE') { inpNome.value = res.nome; inpNome.readOnly = true; Swal.fire('Atenção', 'Colaborador já cadastrado! Se deseja alterar, feche esta janela e edite na tabela principal.', 'warning'); }
+             else if(res && res.status === 'ENCONTRADO') { inpNome.value = res.nome; inpNome.readOnly = true; }
+             else if(res && res.status === 'ERRO') { inpNome.value = ""; Swal.fire('Erro', res.msg, 'error'); inpNome.readOnly = false; }
+             else { inpNome.value = ""; inpNome.placeholder = "Nome não encontrado. Digite manualmente..."; inpNome.readOnly = false; inpNome.focus(); }
+          }).buscarNomeAtivo(mat);
+       }
+    }
+    
+    function filtroAdmin() { 
+       let sel = document.getElementById('sel-admin-setor').value; document.getElementById('lbl-planilha-setor').innerText = sel; 
+       LISTA = (sel === "VISÃO GLOBAL" || USER.perfil !== 'ADMIN') ? LISTA_ORIGINAL : LISTA_ORIGINAL.filter(i => i.area === sel); 
+       atualizarDropdownContratos(LISTA); filtrar(); 
+    }
+    
+    function renderTable(l) {
+       let tb = document.getElementById('tb-corpo'); tb.innerHTML = "";
+       LINHAS_SELECIONADAS = [];
+       atualizarBtnLote();
+       
+       if(l.length === 0) {
+           document.getElementById('status-msg').style.display = "block";
+           document.getElementById('status-msg').innerText = "Nenhum colaborador encontrado nesta visualização.";
+           return;
+       }
+       document.getElementById('status-msg').style.display = "none";
+
+       l.forEach(i => {
+          let tr = document.createElement('tr'); let color = "var(--success)"; 
+          if(i.status === "DEMITIDO") color = "var(--danger)"; else if(i.status === "SEM ROTA") color = "var(--accent)"; else if(i.status === "FÉRIAS") color = "var(--info)";
+          
+          let isHist = String(i.linha).startsWith("HIST"); 
+          let dis = (SYSTEM_LOCKED && USER.perfil !== 'ADMIN') ? 'disabled' : '';
+          
+          let btnEdit = `<button class="btn-icon" ${dis} onclick='event.stopPropagation(); edit(${JSON.stringify(i)})'><span class="material-icons">edit</span></button>`;
+          let btnDel = `<button class="btn-icon" ${dis} style="color:var(--danger)" onclick="event.stopPropagation(); confirmDel('${i.linha}', '${i.matricula}')"><span class="material-icons">delete</span></button>`;
+          
+          let tipoStr = i.tipo ? i.tipo : "-";
+          let horaStr = i.horario ? i.horario : "-";
+          
+          tr.innerHTML = `
+              <td class="col-acoes">${btnEdit} ${btnDel}</td>
+              <td class="col-mat"><strong>${i.matricula}</strong></td>
+              <td class="col-nome">${i.nome}</td>
+              <td class="col-tipo"><span style="background:var(--input); padding:4px 8px; border-radius:4px; font-size:11px; font-weight:bold;">${tipoStr}</span></td>
+              <td class="col-hora">${horaStr}</td>
+              <td class="col-van">${i.carro||'-'}</td>
+              <td class="col-status" style="color:${color}; font-weight:900;">${i.status}</td>
+              <td class="col-data">${i.situacao}</td>
+          `;
+          
+          if(!dis && !isHist) {
+              tr.onclick = function() {
+                  let idx = LINHAS_SELECIONADAS.findIndex(x => x.linha === i.linha);
+                  if(idx > -1) { LINHAS_SELECIONADAS.splice(idx, 1); tr.classList.remove('row-sel'); } 
+                  else { LINHAS_SELECIONADAS.push({linha: i.linha, mat: i.matricula}); tr.classList.add('row-sel'); }
+                  atualizarBtnLote();
+              };
+          }
+          tb.appendChild(tr);
+       });
+    }
+    
+    function renderSheetView(l) { 
+        let thead = document.getElementById('head-planilha'); 
+        let tbody = document.getElementById('tb-planilha'); 
+        tbody.innerHTML = ""; 
+        let maxDias = getDiasNoMes(); 
+        
+        let hRow = "<tr><th class='th-yellow'>CARRO</th><th class='th-yellow'>VAN</th><th class='th-yellow'>MOTORISTA</th><th>MATRICULA</th><th>NOME</th><th>FONE</th><th>CEP</th><th>ENDEREÇO</th><th>Nº</th><th>BAIRRO</th><th>TIPO</th><th>HORARIO</th>"; 
+        for(let d=1; d<=maxDias; d++) hRow += `<th class='day-col'>${d}</th>`; 
+        hRow += "<th>FOCAL</th><th>AREA</th><th>CONTRATO</th></tr>"; 
+        thead.innerHTML = hRow; 
+        
+        l.forEach(i => { 
+            let tr = document.createElement('tr'); 
+            if(i.status === 'DEMITIDO') tr.className = 'row-demitido'; 
+            else if(i.status === 'SEM ROTA') tr.className = 'row-semrota'; 
+            else if(i.status === 'FÉRIAS') tr.className = 'row-ferias'; 
+            
+            let tds = `<td>${i.carro||''}</td><td>${i.van||''}</td><td>${i.mot||''}</td><td>${i.matricula}</td><td>${i.nome}</td><td>${i.fone}</td><td>${i.cep}</td><td>${i.rua}</td><td>${i.num}</td><td>${i.bairro}</td><td>${i.tipo}</td><td>${i.horario}</td>`; 
+            
+            for(let d=0; d<maxDias; d++) {
+                let val = i.diasGrid && i.diasGrid[d] ? i.diasGrid[d] : "";
+                let cls = val==="F" ? "folga-cell" : (val==="FE" ? "ferias-cell" : ""); 
+                tds += `<td class='day-col ${cls}'>${val==="FE"?"FE":val}</td>`;
+            }
+            
+            tds += `<td>${i.focal||''}</td><td>${i.area||''}</td><td>${i.contrato||''}</td>`; 
+            tr.innerHTML = tds; 
+            tbody.appendChild(tr); 
+        }); 
+    }
+    
+    function verDetalheSolicitacao(idx) {
+        let s = SOLICITACOES_CACHE[idx]; if(!s) return;
+        
+        abrirModal(false); // Abre com o título padrão em vermelho "Ficha de Cadastro"
+        
+        // Esconde apenas o botão de salvar, já que é apenas para visualização
+        document.getElementById('btn-save').style.display = 'none';
+        
+        // Preenche absolutamente todos os dados vindos da solicitação
+        if(document.getElementById('mat')) document.getElementById('mat').value = s.matricula || ""; 
+        if(document.getElementById('nom')) document.getElementById('nom').value = s.nome || ""; 
+        if(document.getElementById('con')) document.getElementById('con').value = s.contrato || ""; 
+        if(document.getElementById('tel')) document.getElementById('tel').value = s.fone || ""; 
+        if(document.getElementById('cep')) document.getElementById('cep').value = s.cep || ""; 
+        if(document.getElementById('end')) document.getElementById('end').value = s.rua || ""; 
+        if(document.getElementById('num')) document.getElementById('num').value = s.num || ""; 
+        if(document.getElementById('bai')) document.getElementById('bai').value = s.bairro || "";
+        if(document.getElementById('tipo')) document.getElementById('tipo').value = s.tipo || "";
+        attH(); 
+        if(document.getElementById('hora')) document.getElementById('hora').value = s.horario || ""; 
+        
+        // Renderiza as folgas
+        FOLGAS = s.folgas || [];
+        document.getElementById('chk-ferias').checked = false;
+        toggleFeriasArea();
+        renderCal();
+
+        // Bloqueia todos os campos para impedir alterações acidentais pelo Admin
+        document.querySelectorAll('#modal-form input, #modal-form select').forEach(el => el.disabled = true);
+    }
+    
+    function abrirModal(isEmergencia) { 
+        document.getElementById('modal-title').innerText = isEmergencia ? "Solicitação Emergencial" : "Ficha de Cadastro"; 
+        document.getElementById('modal-title').style.color = isEmergencia ? "var(--info)" : "var(--primary)"; 
+        document.getElementById('modal-form').style.display='flex'; document.getElementById('edit-linha').value=''; 
+        document.getElementById('btn-save').style.display = 'block'; 
+        document.querySelectorAll('#modal-form input, #modal-form select').forEach(el => el.disabled = false); limpar(); 
+    }
+    
+    function edit(i) { 
+        abrirModal(false); 
+        document.getElementById('edit-linha').value = i.linha; 
+        ['mat','nom','con','tel','cep','end','num','bai','tipo'].forEach(k => { 
+            let val = i[k==='mat'?'matricula':k==='nom'?'nome':k==='con'?'contrato':k==='tel'?'fone':k==='cep'?'cep':k==='end'?'rua':k==='num'?'num':k==='bai'?'bairro':k==='tipo'?'tipo':'']; 
+            document.getElementById(k).value = val || ""; 
+        }); 
+        attH(); document.getElementById('hora').value = i.horario; 
+        FOLGAS = i.folgas || []; 
+        
+        document.getElementById('ferias-inicio').value = i.feriasIni || "";
+        document.getElementById('ferias-fim').value = i.feriasFim || "";
+        
+        let temFerias = (i.feriasIni && i.feriasFim) || i.diasGrid.includes("FE"); 
+        document.getElementById('chk-ferias').checked = !!temFerias; 
+        toggleFeriasArea(); 
+        renderCal(); 
+    }
+    
+    function salvar() {
+       let d = { 
+           isEdit: !!document.getElementById('edit-linha').value, 
+           linha: document.getElementById('edit-linha').value, 
+           matricula: document.getElementById('mat').value, 
+           nome: document.getElementById('nom').value, 
+           contrato: document.getElementById('con').value, 
+           telefone: document.getElementById('tel').value, 
+           cep: document.getElementById('cep').value, 
+           endereco: document.getElementById('end').value, 
+           numero: document.getElementById('num').value, 
+           bairro: document.getElementById('bai').value, 
+           tipo: document.getElementById('tipo').value, 
+           horario: document.getElementById('hora').value, 
+           folgas: FOLGAS, 
+           setorManual: USER.perfil === 'ADMIN' ? 'ADM' : null 
+       };
+       
+       d.isFerias = document.getElementById('chk-ferias').checked; 
+       d.feriasIni = document.getElementById('ferias-inicio').value; 
+       d.feriasFim = document.getElementById('ferias-fim').value;
+
+       if (!d.matricula || !d.nome || !d.contrato || !d.telefone || !d.cep || !d.endereco || !d.numero || !d.bairro || !d.tipo || !d.horario) {
+           return Swal.fire({ title: 'Campos Obrigatórios', text: 'Por favor, preencha TODAS as informações do colaborador antes de salvar.', icon: 'warning', confirmButtonColor: '#f59e0b' });
+       }
+
+       if(d.isFerias && (!d.feriasIni || !d.feriasFim)) return Swal.fire('Erro', 'Selecione o INÍCIO e FIM das férias!', 'error');
+       
+       let btn = document.getElementById('btn-save'); 
+       let txt = btn.innerText; 
+       btn.innerText="SALVANDO..."; 
+       btn.disabled=true;
+       
+       google.script.run.withSuccessHandler(r => {
+          btn.innerText=txt; 
+          btn.disabled=false;
+          
+          if (r === "Duplicado!") {
+              return Swal.fire('Atenção', 'Este colaborador (Matrícula) já existe na base principal. Se deseja alterar os dados, feche esta janela e clique no botão de Editar (lápis) na tabela.', 'warning');
+          }
+          
+          let isErro = String(r).includes("BLOQUEADO") || String(r).includes("ERRO") || String(r).includes("Sistema Fechado"); 
+          Swal.fire(isErro ? 'Erro' : 'Sucesso', r, isErro ? 'error' : 'success');
+          
+          if (!isErro) { 
+              document.getElementById('modal-form').style.display='none'; 
+              carregarDados(); 
+          } 
+       }).salvarDados(d, USER.usuario, USER.setor, USER.perfil);
+    }
+
+    function toggleFeriasArea() { 
+        let chk = document.getElementById('chk-ferias').checked; 
+        document.getElementById('area-ferias-dates').style.display = chk ? 'block' : 'none'; 
+        
+        if (!chk) {
+            document.getElementById('ferias-inicio').value = '';
+            document.getElementById('ferias-fim').value = '';
+        }
+        
+        renderCal(); 
+    }
+    
+    function confirmDel(ln, mat) { 
+        document.getElementById('confirm-msg').innerText = "Tem certeza que deseja excluir e arquivar este colaborador?"; 
+        document.getElementById('modal-confirm').style.display = 'flex'; 
+        
+        document.getElementById('btn-confirm-yes').onclick = function() { 
+            document.getElementById('modal-confirm').style.display = 'none'; 
+            Swal.fire({ title: 'Arquivando...', html: 'Movendo para o Histórico...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            
+            google.script.run
+                .withSuccessHandler(res => { 
+                    let mensagem = String(res || "");
+                    if (mensagem.includes("Erro")) { Swal.fire('Atenção', mensagem, 'error'); } 
+                    else { Swal.fire('Sucesso!', mensagem, 'success'); carregarDados(); }
+                })
+                .withFailureHandler(err => { Swal.fire('Erro de Conexão', 'Ocorreu uma falha ao comunicar com o servidor.', 'error'); })
+                .remover(ln, mat); 
+        }; 
+    }
+    
+    function buscaEnd(el) { let c = el.value.replace(/\D/g,''); if(c.length!==8)return; if(!c.startsWith('07')) { Swal.fire('Aviso', 'Só Guarulhos (07...)', 'warning'); el.value=""; return; } document.getElementById('end').value="..."; google.script.run.withSuccessHandler(r=>{ if(r){document.getElementById('end').value=r.rua;document.getElementById('bai').value=r.bairro;document.getElementById('num').focus();}else{document.getElementById('end').value="Não achou";}}).buscarCEP(c); }
+    function attH() { let t=document.getElementById('tipo').value; let s=document.getElementById('hora'); s.innerHTML=""; let o=(t==="ENTRADA")?["03:00","04:00","05:00"]:["00:30","01:25","02:15"]; o.forEach(h=>{let x=document.createElement('option');x.value=h;x.text=h;s.add(x)}); }
+    function mask(o,t) { let v = o.value.replace(/\D/g,''); if(t==='tel'){v=v.substring(0,11);o.value=v.replace(/^(\d{2})(\d)/,"($1) $2").replace(/(\d)(\d{4})$/,"$1-$2");} if(t==='cep'){v=v.substring(0,8);o.value=v.replace(/^(\d{5})(\d)/,"$1-$2");} }
+    function limpar() { document.querySelectorAll('#modal-form input').forEach(x=>x.value=''); FOLGAS=[]; document.getElementById('chk-ferias').checked=false; toggleFeriasArea(); renderCal(); }
+    function upper(e) { e.value=e.value.toUpperCase(); }
+    
+    function lerUpload(inp) { let f=inp.files[0]; if(!f) return; document.getElementById('fName').innerText=f.name; let r=new FileReader(); r.onload=e=>{let d=new Uint8Array(e.target.result); let w=XLSX.read(d,{type:'array'}); let s=XLSX.utils.sheet_to_json(w.Sheets[w.SheetNames[0]],{header:1}); DADOS_UPLOAD=s; document.getElementById('btn-proc').disabled=false; document.getElementById('btn-proc').style.opacity="1"; }; r.readAsArrayBuffer(f); }
+    
+    function enviarUpload() { 
+        let b = document.getElementById('btn-proc'); 
+        b.innerText = "Processando..."; 
+        b.disabled = true;
+        
+        google.script.run
+            .withSuccessHandler(r => {
+                Swal.fire('Upload', r, 'info'); 
+                carregarDados(); 
+                b.innerText = "PROCESSAR COMPLETO";
+                b.style.opacity = "0.5"; 
+            })
+            .withFailureHandler(err => {
+                Swal.fire('Erro no Sistema', 'Falha ao tentar processar o Excel: ' + err.message, 'error');
+                b.innerText = "PROCESSAR COMPLETO";
+                b.disabled = false;
+            })
+            .receberDadosFretado(DADOS_UPLOAD); 
+    }
+    
+    function baixarExcel() { let b=document.getElementById('btn-down'); b.innerText="Gerando..."; google.script.run.withSuccessHandler(r=>{const l=document.createElement('a');l.href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,"+r.base64;l.download=r.filename;document.body.appendChild(l);l.click();document.body.removeChild(l);b.innerText="BAIXAR ESCALA";}).gerarExcelFormatado(); }
+    
+    function fazerLogout() {
+        Swal.fire({
+            title: 'Saindo...',
+            text: 'Encerrando sua sessão com segurança.',
+            icon: 'info',
+            timer: 1500,
+            showConfirmButton: false,
+            didOpen: () => Swal.showLoading(),
+            willClose: () => {
+                google.script.run.withSuccessHandler(function(url) {
+                    window.top.location.href = url; 
+                }).obterUrlApp();
+            }
+        });
+    }
+    // === CANCELAR SELEÇÃO AO CLICAR FORA ===
+    document.addEventListener('click', function(e) {
+        // Verifica se o clique foi fora da tabela e fora dos botões de ação
+        let isClickNaTabela = e.target.closest('#tb-corpo');
+        let isClickNoBotaoExcluir = e.target.closest('#btn-excluir-lote');
+        let isClickEmAcoes = e.target.closest('.btn-icon'); 
+        
+        if (!isClickNaTabela && !isClickNoBotaoExcluir && !isClickEmAcoes) {
+            if (LINHAS_SELECIONADAS.length > 0) {
+                LINHAS_SELECIONADAS = [];
+                // Remove a cor vermelha de todas as linhas
+                document.querySelectorAll('#tb-corpo tr.row-sel').forEach(tr => tr.classList.remove('row-sel'));
+                atualizarBtnLote(); // Esconde o botão de excluir
+            }
+        }
+    });
+
+    // === LÓGICA DO ADMIN: LIMPAR FOLGAS ===
+    function confirmarLimpezaFolgas() {
+        Swal.fire({
+            title: 'ATENÇÃO: Ação Irreversível!',
+            text: 'Isso vai apagar TODAS as folgas (exceto férias) de TODOS os colaboradores na base. Tem certeza?',
+            icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc2626', confirmButtonText: 'SIM, LIMPAR TUDO!'
+        }).then((result) => {
+            if(result.isConfirmed) {
+                Swal.fire({ title: 'Limpando base...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                google.script.run.withSuccessHandler(r => {
+                    Swal.fire('Sucesso!', r, 'success');
+                    carregarDados();
+                }).limparGradeFolgas();
+            }
+        });
+    }
+
+    // === LÓGICA DA EXCLUSÃO EM LOTE COM SELEÇÃO INTELIGENTE ===
+    function atualizarBtnLote() {
+        let btn = document.getElementById('btn-excluir-lote');
+        if(LINHAS_SELECIONADAS.length > 0) {
+            btn.style.display = 'flex';
+            document.getElementById('qtd-lote').innerText = LINHAS_SELECIONADAS.length;
+        } else {
+            btn.style.display = 'none';
+        }
+    }
+
+    function excluirLote() {
+        if(LINHAS_SELECIONADAS.length === 0) return;
+
+        Swal.fire({
+            title: 'Excluir em Lote?',
+            text: `Você está prestes a excluir ${LINHAS_SELECIONADAS.length} colaboradores de uma vez. Confirma?`,
+            icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc2626', confirmButtonText: 'Sim, Excluir Todos!'
+        }).then((result) => {
+            if(result.isConfirmed) {
+                Swal.fire({ title: 'Excluindo Lote...', text: 'Isso pode levar alguns segundos.', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                google.script.run.withSuccessHandler(r => {
+                    Swal.fire('Sucesso!', r, 'success');
+                    LINHAS_SELECIONADAS = [];
+                    atualizarBtnLote();
+                    carregarDados();
+                }).removerLote(LINHAS_SELECIONADAS);
+            }
+        });
+    }
+    
+  </script> <?!= include('ModalColagem'); ?>
+</body>
+</html>
