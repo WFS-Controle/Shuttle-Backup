@@ -1,0 +1,522 @@
+<style>
+    /* DESTRAVA A ROLAGEM DA ABA BI */
+    #tab-bi { overflow-y: auto !important; padding: 30px; }
+
+    /* =========================================
+       MÓDULO DE BI (TORRE DE CONTROLE) PREMIUM
+       ========================================= */
+    .bi-chart-container { background: white; padding: 25px; border-radius: var(--radius-lg); border: 1px solid var(--border); margin-bottom: 25px; height: 380px; box-shadow: var(--shadow-soft); }
+    .bi-detail-box { background: white; border-radius: var(--radius-lg); border: 1px solid var(--border); padding: 25px; display: none; box-shadow: var(--shadow-soft); }
+    .badge-esc { background: #d1fae5; color: #059669; padding: 6px 12px; border-radius: var(--radius-pill); font-size: 11px; font-weight: 700; border: 1px solid #a7f3d0; }
+    .badge-fol { background: #fef3c7; color: #d97706; padding: 6px 12px; border-radius: var(--radius-pill); font-size: 11px; font-weight: 700; border: 1px solid #fde68a; }
+    .badge-fer { background: #e0f2fe; color: #0284c7; padding: 6px 12px; border-radius: var(--radius-pill); font-size: 11px; font-weight: 700; border: 1px solid #bae6fd; }
+    .bi-summary { margin-bottom: 25px; padding: 20px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-lg); color: #166534; font-weight: 700; text-align: center; font-size: 16px; display: flex; justify-content: center; align-items: center; gap: 10px; box-shadow: var(--shadow-soft); }
+    .bi-chart-title { font-size: 16px; font-weight: 800; color: var(--text-strong); margin-top: 0; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed var(--border); letter-spacing: 0.5px; display:flex; align-items:center; gap:8px;}
+    
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+
+<!-- ========================================================
+     TODO O CONTEÚDO AGORA ESTÁ DENTRO DA ABA #tab-bi
+========================================================= -->
+<div id="tab-bi" class="dash-content">
+    <div style="max-width: 1200px; margin: 0 auto; width: 100%;">
+
+        <!-- TOGGLE DE VISÃO DO BI -->
+        <div style="display:flex; justify-content:center; gap:10px; margin-bottom: 20px; background: #f4f4f5; padding: 6px; border-radius: 50px; width: max-content; margin-left: auto; margin-right: auto; border: 1px solid #e4e4e7;">
+            <button id="btn-bi-op" onclick="mudarVisaoBI('OPERACIONAL')" style="background: var(--primary); color: white; border: none; padding: 8px 20px; border-radius: 50px; font-weight: 800; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(225,29,72,0.3); transition: 0.2s;">
+                <span class="material-icons" style="font-size: 16px;">pie_chart</span> VISÃO OPERACIONAL
+            </button>
+            <button id="btn-bi-comp" onclick="mudarVisaoBI('COMPARATIVO')" style="background: transparent; color: #52525b; border: none; padding: 8px 20px; border-radius: 50px; font-weight: 800; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s;">
+                <span class="material-icons" style="font-size: 16px;">compare_arrows</span> ANÁLISE COMPARATIVA
+            </button>
+        </div>
+
+        <!-- 1. CONTAINER DA ANÁLISE COMPARATIVA (INICIA ESCONDIDO) -->
+        <div id="bi-view-comparativo" style="display: none; animation: fadeIn 0.4s ease;">
+            <!-- Cards de Resumo -->
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 25px;">
+                <div style="background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e4e4e7; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                    <div style="font-size: 11px; color: #71717a; font-weight: 800; text-transform: uppercase;">Mês Atual (Vigente)</div>
+                    <div id="comp-total-atual" style="font-size: 28px; font-weight: 900; color: #0284c7; margin-top: 5px;">-</div>
+                </div>
+                <div style="background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e4e4e7; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                    <div style="font-size: 11px; color: #71717a; font-weight: 800; text-transform: uppercase;">Próximo Mês (Construção)</div>
+                    <div id="comp-total-prox" style="font-size: 28px; font-weight: 900; color: #059669; margin-top: 5px;">-</div>
+                </div>
+                <div style="background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e4e4e7; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                    <div style="font-size: 11px; color: #71717a; font-weight: 800; text-transform: uppercase;">Novas Entradas</div>
+                    <div id="comp-adicionados" style="font-size: 28px; font-weight: 900; color: #10b981; margin-top: 5px;">-</div>
+                </div>
+                <div style="background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e4e4e7; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); border-bottom: 4px solid #ef4444;">
+                    <div style="font-size: 11px; color: #71717a; font-weight: 800; text-transform: uppercase;">Saídas / Não Renovados</div>
+                    <div id="comp-removidos" style="font-size: 28px; font-weight: 900; color: #ef4444; margin-top: 5px;">-</div>
+                </div>
+            </div>
+
+            <!-- Tabela de Detalhamento das Saídas -->
+            <div style="background: #fff; padding: 25px; border-radius: 12px; border: 1px solid #e4e4e7; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                    <h4 style="margin: 0; color: #18181b; display: flex; align-items: center; gap: 8px;">
+                        <span class="material-icons" style="color: #ef4444;">person_remove</span> 
+                        Colaboradores Removidos (Filtro: <span id="lbl-setor-comp" style="color:#0284c7;">GLOBAL</span>)
+                    </h4>
+                    <button onclick="exportarComparativo()" style="background: #10b981; color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(16,185,129,0.3);">
+                        <span class="material-icons" style="font-size: 16px;">download</span> EXPORTAR EXCEL
+                    </button>
+                </div>
+                
+                <div style="max-height: 400px; overflow-y: auto; border: 1px solid #f4f4f5; border-radius: 8px;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12px;">
+                        <thead style="background: #f8fafc; position: sticky; top: 0; z-index: 5;">
+                            <tr>
+                                <th style="padding: 12px; border-bottom: 2px solid #e2e8f0; color: #475569;">MATRÍCULA</th>
+                                <th style="padding: 12px; border-bottom: 2px solid #e2e8f0; color: #475569;">NOME DO COLABORADOR</th>
+                                <th style="padding: 12px; border-bottom: 2px solid #e2e8f0; color: #475569;">SETOR</th>
+                                <th style="padding: 12px; border-bottom: 2px solid #e2e8f0; color: #475569;">RESPONSÁVEL (FOCAL)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tb-comp-removidos"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. CONTAINER DA VISÃO OPERACIONAL (GRÁFICOS) -->
+        <div id="bi-view-operacional">
+            <div style="display:flex; justify-content:space-between; align-items:center; background:white; padding:20px 25px; border-radius:var(--radius-lg); border:1px solid var(--border); box-shadow:var(--shadow-soft); margin-bottom:25px; flex-wrap:wrap; gap:15px;">
+                <h2 style="margin:0; color:var(--text-strong); display:flex; align-items:center; gap:10px;"><span class="material-icons" style="color:var(--info);">pie_chart</span> Controle Operacional</h2>
+                
+                <div style="display:flex; gap:15px; align-items:center; flex-wrap:wrap;">
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                        <label style="font-size:10px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Filtro de Rota</label>
+                        <select id="sel-bi-tipo" class="inp-filter" style="padding:8px 15px;" onchange="atualizarBIFrota()">
+                            <option value="ENTRADA">🟢 APENAS ENTRADAS</option>
+                            <option value="SAIDA">🟡 APENAS SAÍDAS</option>
+                            <option value="COMPARA">⚖️ COMPARAR AMBOS</option>
+                        </select>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                        <label style="font-size:10px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Horário</label>
+                        <select id="sel-bi-hora" class="inp-filter" style="padding:8px 15px;" onchange="atualizarBIFrota()">
+                            <option value="TODOS">🕒 TODOS</option>
+                        </select>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                        <label style="font-size:10px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Escala do Dia</label>
+                        <select id="sel-bi-dia" class="inp-filter" style="padding:8px 15px;" onchange="atualizarBIFrota()"></select>
+                    </div>
+                </div>
+            </div>
+
+            <div id="bi-content" style="display:none;">
+                <div class="bi-summary">
+                    <span class="material-icons">groups</span> Embarques Previstos Hoje: 
+                    <span id="bi-total-geral" style="font-size:24px; font-weight:900;">0</span>
+                </div>
+                
+                <div id="box-chart-1" class="bi-chart-container">
+                    <h4 id="title-chart-1" class="bi-chart-title" style="display:none;"><span class="material-icons" style="color:#10b981;">arrow_circle_right</span> ROTA DE ENTRADA</h4>
+                    <div style="position: relative; height: 90%;"><canvas id="vanChart1"></canvas></div>
+                </div>
+
+                <div id="box-chart-2" class="bi-chart-container" style="display:none;">
+                    <h4 id="title-chart-2" class="bi-chart-title"><span class="material-icons" style="color:#f59e0b;">arrow_circle_left</span> ROTA DE SAÍDA</h4>
+                    <div style="position: relative; height: 90%;"><canvas id="vanChart2"></canvas></div>
+                </div>
+
+                <div id="bi-detail-box" class="bi-detail-box">
+                    <h3 id="bi-detail-title" style="color: var(--text-strong); margin-top:0; border-bottom: 1px solid var(--border); padding-bottom: 15px; font-size:18px;">Detalhes da Van</h3>
+                    <div style="overflow-y:auto; max-height: 400px; padding-right:10px;">
+                        <table class="tbl-dash">
+                            <thead><tr>
+                                <th style="text-align:left; padding-left:20px; position:sticky; top:0; z-index:2; background:#f1f5f9;">COLABORADOR</th>
+                                <th style="text-align:center; position:sticky; top:0; z-index:2; background:#f1f5f9;">HORÁRIO</th>
+                                <th style="text-align:center; position:sticky; top:0; z-index:2; background:#f1f5f9;">SITUAÇÃO</th>
+                            </tr></thead>
+                            <tbody id="tb-bi-detalhes"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // LÓGICA DO MÓDULO BI E COMPARATIVO
+    // ==========================================
+    var chartInstance1 = null;
+    var chartInstance2 = null;
+    var biLoaded = false;
+
+    function mudarVisaoBI(visao) {
+        let btnOp = document.getElementById('btn-bi-op');
+        let btnComp = document.getElementById('btn-bi-comp');
+        let viewOp = document.getElementById('bi-view-operacional');
+        let viewComp = document.getElementById('bi-view-comparativo');
+
+        if(visao === 'OPERACIONAL') {
+            btnOp.style.background = 'var(--primary)'; btnOp.style.color = 'white'; btnOp.style.boxShadow = '0 4px 12px rgba(225,29,72,0.3)';
+            btnComp.style.background = 'transparent'; btnComp.style.color = '#52525b'; btnComp.style.boxShadow = 'none';
+            viewOp.style.display = 'block';
+            viewComp.style.display = 'none';
+            if(typeof atualizarBIFrota === 'function') atualizarBIFrota();
+        } else {
+            btnComp.style.background = '#0284c7'; btnComp.style.color = 'white'; btnComp.style.boxShadow = '0 4px 12px rgba(2,132,199,0.3)';
+            btnOp.style.background = 'transparent'; btnOp.style.color = '#52525b'; btnOp.style.boxShadow = 'none';
+            viewOp.style.display = 'none';
+            viewComp.style.display = 'block';
+            gerarAnaliseComparativa();
+        }
+    }
+
+    function gerarAnaliseComparativa() {
+        let vigentes = typeof LISTA_BACKUP !== 'undefined' ? LISTA_BACKUP : [];
+        let proximos = typeof LISTA_ORIGINAL !== 'undefined' ? LISTA_ORIGINAL : [];
+
+        let seletorAdmin = document.getElementById('sel-admin-setor');
+        let isAdmin = typeof USER !== 'undefined' && USER && USER.perfil === 'ADMIN';
+        let setorFiltro = (seletorAdmin && isAdmin) ? seletorAdmin.value : (typeof USER !== 'undefined' && USER ? USER.setor : "VISÃO GLOBAL");
+        
+        let lblSetor = document.getElementById('lbl-setor-comp');
+        if(lblSetor) lblSetor.innerText = setorFiltro;
+
+        if (setorFiltro !== "VISÃO GLOBAL") {
+            vigentes = vigentes.filter(x => (x.area || "").toUpperCase() === setorFiltro.toUpperCase());
+            proximos = proximos.filter(x => (x.area || "").toUpperCase() === setorFiltro.toUpperCase());
+        }
+
+        let matVigentes = vigentes.map(x => String(x.matricula).trim());
+        let matProximos = proximos.map(x => String(x.matricula).trim());
+
+        let removidos = vigentes.filter(x => !matProximos.includes(String(x.matricula).trim()));
+        let adicionados = proximos.filter(x => !matVigentes.includes(String(x.matricula).trim()));
+
+        window.REMOVIDOS_ATUAIS = removidos;
+        window.SETOR_FILTRO_ATUAL = setorFiltro;
+
+        if(document.getElementById('comp-total-atual')) document.getElementById('comp-total-atual').innerText = vigentes.length;
+        if(document.getElementById('comp-total-prox')) document.getElementById('comp-total-prox').innerText = proximos.length;
+        if(document.getElementById('comp-adicionados')) document.getElementById('comp-adicionados').innerText = "+" + adicionados.length;
+        if(document.getElementById('comp-removidos')) document.getElementById('comp-removidos').innerText = "-" + removidos.length;
+
+        let tb = document.getElementById('tb-comp-removidos');
+        if(!tb) return;
+        tb.innerHTML = '';
+
+        if(removidos.length === 0) {
+            tb.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:30px; color:#10b981; font-weight:bold;"><span class="material-icons" style="vertical-align:middle; font-size:18px;">check_circle</span> Nenhum colaborador foi removido neste setor.</td></tr>`;
+            return;
+        }
+
+        removidos.sort((a, b) => (a.area || "").localeCompare(b.area || ""));
+
+        removidos.forEach((r, index) => {
+            let tr = document.createElement('tr');
+            tr.style.background = index % 2 === 0 ? '#fff' : '#f8fafc';
+            tr.innerHTML = `
+                <td style="padding: 10px 12px; font-weight: 800; color: #ef4444;">${r.matricula}</td>
+                <td style="padding: 10px 12px; font-weight: 600;">${r.nome}</td>
+                <td style="padding: 10px 12px; font-weight: 700; color: #475569;">${r.area || "-"}</td>
+                <td style="padding: 10px 12px; color: #64748b;">${r.focal || "Não Identificado"}</td>
+            `;
+            tb.appendChild(tr);
+        });
+    }
+
+    function exportarComparativo() {
+        let removidos = window.REMOVIDOS_ATUAIS || [];
+        let setorFiltro = window.SETOR_FILTRO_ATUAL || "GERAL";
+        
+        if (removidos.length === 0) return Swal.fire('Aviso', 'Não há dados para exportar neste filtro.', 'info');
+
+        let dadosPlanilha = removidos.map(r => ({
+            "MATRÍCULA": r.matricula || "-",
+            "NOME COMPLETO": r.nome || "-",
+            "SETOR": r.area || "-",
+            "RESPONSÁVEL (FOCAL)": r.focal || "Não Identificado"
+        }));
+
+        try {
+            let ws = XLSX.utils.json_to_sheet(dadosPlanilha);
+            
+            ws['!cols'] = [{wch: 15}, {wch: 40}, {wch: 25}, {wch: 30}];
+            
+            let wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Pendencias");
+
+            let setorLimpo = setorFiltro === "VISÃO GLOBAL" ? "GLOBAL" : setorFiltro.replace(/\s+/g, '_').toUpperCase();
+            let nomeArquivo = `PENDENCIAS ${setorLimpo}.xlsx`;
+
+            XLSX.writeFile(wb, nomeArquivo);
+            
+        } catch (e) {
+            console.error("Erro na exportação Excel:", e);
+            Swal.fire('Erro', 'Houve uma falha ao gerar o arquivo Excel.', 'error');
+        }
+    }
+
+    // ==========================================
+    // LÓGICA DE GRÁFICOS (OPERACIONAL)
+    // ==========================================
+    try {
+        if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
+            Chart.register(ChartDataLabels);
+        }
+    } catch(e) { console.error("Erro ao registrar plugin do ChartJS", e); }
+
+    function obterDadosParaBI() {
+        let baseBI = (typeof LISTA_BACKUP !== 'undefined' && LISTA_BACKUP.length > 0) ? LISTA_BACKUP : (typeof LISTA_ORIGINAL !== 'undefined' ? LISTA_ORIGINAL : []);
+        if(typeof USER !== 'undefined' && USER && USER.perfil === 'ADMIN') {
+            let selAdmin = document.getElementById('sel-admin-setor');
+            if (selAdmin && selAdmin.value !== "VISÃO GLOBAL") {
+                return baseBI.filter(i => i.area === selAdmin.value);
+            }
+        }
+        return baseBI;
+    }
+
+    function inicializarBI() {
+        let contentBox = document.getElementById('bi-content');
+        if (contentBox) contentBox.style.display = 'block';
+
+        let dadosBI = obterDadosParaBI();
+        
+        if (!biLoaded) {
+            var selDia = document.getElementById('sel-bi-dia');
+            if (selDia && selDia.options.length === 0) {
+                for(var d=1; d<=31; d++) { var opt = document.createElement('option'); opt.value = d; opt.text = "Dia " + (d < 10 ? "0" + d : d); selDia.add(opt); }
+                selDia.value = new Date().getDate();
+            }
+            
+            var selHora = document.getElementById('sel-bi-hora');
+            if (selHora) {
+                var horariosEncontrados = [];
+                if (dadosBI && dadosBI.length > 0) {
+                    dadosBI.forEach(function(c) {
+                        if(c.horario && c.horario !== 'S/H' && horariosEncontrados.indexOf(c.horario.trim()) === -1) {
+                            horariosEncontrados.push(c.horario.trim());
+                        }
+                    });
+                }
+                selHora.innerHTML = '<option value="TODOS">🕒 TODOS OS HORÁRIOS</option>';
+                horariosEncontrados.sort().forEach(function(h) {
+                    var opt = document.createElement('option'); opt.value = h; opt.text = "🕒 " + h; selHora.add(opt);
+                });
+            }
+            biLoaded = true;
+        }
+        atualizarBIFrota();
+    }
+
+    function extrairDadosBI(indexDia, filtroTipo, filtroHora) {
+        var ocupacao = {};
+        var totalOperando = 0;
+        let dadosBI = obterDadosParaBI();
+
+        if (!dadosBI || dadosBI.length === 0) return { dados: [], total: 0 };
+
+        dadosBI.forEach(function(colab) {
+            if(colab.status === 'DEMITIDO' || colab.status === 'SEM ROTA') return; 
+
+            var tipoColab = (colab.tipo || "INDEFINIDO").trim().toUpperCase();
+            if (tipoColab === "SAÍDA") tipoColab = "SAIDA"; 
+            if (tipoColab !== filtroTipo) return; 
+
+            var horarioColab = (colab.horario && colab.horario !== "S/H") ? colab.horario.trim() : "";
+            if (filtroHora !== "TODOS" && horarioColab !== filtroHora) return;
+
+            var vanRaw = (colab.carro || colab.van || "").trim().toUpperCase();
+            var van = "SEM VAN";
+            if (/^[VC]\d+/i.test(vanRaw)) { van = vanRaw; }
+
+            var statusDia = "";
+            if (colab.diasGrid && colab.diasGrid[indexDia]) {
+                statusDia = String(colab.diasGrid[indexDia]).trim().toUpperCase();
+            }
+
+            var situacao = "";
+            var isTrabalhando = false;
+
+            if(statusDia === 'F') { situacao = "FOLGA"; }
+            else if(statusDia === 'FE' || colab.status === 'FÉRIAS') { situacao = "FÉRIAS"; }
+            else { situacao = "ESCALADO"; isTrabalhando = true; }
+
+            if(!ocupacao[van]) {
+                ocupacao[van] = { operando: 0, folgas: 0, lista: [], isSemVan: (van === "SEM VAN"), horarioPrincipal: horarioColab };
+            } else if (!ocupacao[van].horarioPrincipal && horarioColab) {
+                ocupacao[van].horarioPrincipal = horarioColab;
+            }
+            
+            if (isTrabalhando) { totalOperando++; ocupacao[van].operando++; } 
+            else { ocupacao[van].folgas++; }
+            
+            ocupacao[van].lista.push({ nome: colab.nome, horario: colab.horario || 'S/H', status: situacao });
+        });
+
+        var resultadoFinal = Object.keys(ocupacao).map(function(v) {
+            return { 
+                van: v, horario: ocupacao[v].horarioPrincipal || "--:--", operando: ocupacao[v].operando,
+                folgas: ocupacao[v].folgas, isSemVan: ocupacao[v].isSemVan,
+                lista: ocupacao[v].lista.sort(function(a,b) { return a.nome.localeCompare(b.nome); })
+            };
+        }).sort(function(a, b) { return b.operando - a.operando; });
+
+        return { dados: resultadoFinal, total: totalOperando };
+    }
+
+    function atualizarBIFrota() {
+        // Atualiza a análise sempre em background
+        if (typeof gerarAnaliseComparativa === 'function') gerarAnaliseComparativa();
+
+        // Se estiver na tela do Comparativo, não renderiza gráficos agora
+        let viewComp = document.getElementById('bi-view-comparativo');
+        if (viewComp && viewComp.style.display === 'block') {
+            return; 
+        }
+
+        let contentBox = document.getElementById('bi-content');
+        if(contentBox) contentBox.style.display = 'block';
+        
+        let detailBox = document.getElementById('bi-detail-box');
+        if(detailBox) detailBox.style.display = 'none';
+
+        if (typeof Chart === 'undefined') {
+            if(document.getElementById('bi-total-geral')) document.getElementById('bi-total-geral').innerHTML = "<span style='font-size:14px; color:var(--danger);'>⚠️ Gráficos indisponíveis (Bloqueio de Rede/Firewall)</span>";
+            if(document.getElementById('box-chart-1')) document.getElementById('box-chart-1').style.display = 'none';
+            if(document.getElementById('box-chart-2')) document.getElementById('box-chart-2').style.display = 'none';
+            return;
+        }
+
+        try {
+            let dadosBI = obterDadosParaBI();
+            
+            if (!dadosBI || dadosBI.length === 0) {
+                if(document.getElementById('bi-total-geral')) document.getElementById('bi-total-geral').innerText = "0";
+                if(document.getElementById('box-chart-1')) document.getElementById('box-chart-1').style.display = 'none';
+                if(document.getElementById('box-chart-2')) document.getElementById('box-chart-2').style.display = 'none';
+                return;
+            }
+
+            var selDiaEl = document.getElementById('sel-bi-dia');
+            var diaSelecionado = selDiaEl ? parseInt(selDiaEl.value) : 1;
+            if (isNaN(diaSelecionado)) diaSelecionado = 1; 
+            var indexDia = diaSelecionado - 1; 
+            
+            var selTipoEl = document.getElementById('sel-bi-tipo');
+            var tipoFiltro = selTipoEl ? selTipoEl.value : "ENTRADA";
+            
+            var selHoraEl = document.getElementById('sel-bi-hora');
+            var horaFiltro = selHoraEl ? selHoraEl.value : "TODOS";
+
+            if (tipoFiltro === "COMPARA") {
+                var resEntrada = extrairDadosBI(indexDia, "ENTRADA", horaFiltro);
+                var resSaida = extrairDadosBI(indexDia, "SAIDA", horaFiltro);
+                
+                var totalGeral = resEntrada.total + resSaida.total;
+                if(document.getElementById('bi-total-geral')) document.getElementById('bi-total-geral').innerHTML = `${totalGeral} <span style="font-size:14px; color:var(--text-muted);">(Entradas: ${resEntrada.total} | Saídas: ${resSaida.total})</span>`;
+                
+                if(document.getElementById('box-chart-2')) document.getElementById('box-chart-2').style.display = 'block';
+                if(document.getElementById('box-chart-1')) document.getElementById('box-chart-1').style.display = 'block';
+                if(document.getElementById('title-chart-1')) {
+                    document.getElementById('title-chart-1').style.display = 'flex';
+                    document.getElementById('title-chart-1').innerHTML = '<span class="material-icons" style="color:#10b981;">arrow_circle_right</span> ROTA DE ENTRADA (' + resEntrada.total + ' Passageiros)';
+                }
+                if(document.getElementById('title-chart-2')) document.getElementById('title-chart-2').innerHTML = '<span class="material-icons" style="color:#f59e0b;">arrow_circle_left</span> ROTA DE SAÍDA (' + resSaida.total + ' Passageiros)';
+
+                chartInstance1 = renderizarGrafico('vanChart1', chartInstance1, resEntrada.dados, "ENTRADA");
+                chartInstance2 = renderizarGrafico('vanChart2', chartInstance2, resSaida.dados, "SAIDA");
+
+            } else {
+                var res = extrairDadosBI(indexDia, tipoFiltro, horaFiltro);
+                if(document.getElementById('bi-total-geral')) document.getElementById('bi-total-geral').innerText = res.total;
+                
+                if(document.getElementById('box-chart-2')) document.getElementById('box-chart-2').style.display = 'none';
+                if(document.getElementById('box-chart-1')) document.getElementById('box-chart-1').style.display = 'block';
+                if(document.getElementById('title-chart-1')) document.getElementById('title-chart-1').style.display = 'none'; 
+
+                chartInstance1 = renderizarGrafico('vanChart1', chartInstance1, res.dados, tipoFiltro);
+                if (chartInstance2) { chartInstance2.destroy(); chartInstance2 = null; }
+            }
+        } catch(erro) {
+            console.error("Erro ao processar BI:", erro);
+            if(document.getElementById('bi-total-geral')) document.getElementById('bi-total-geral').innerHTML = "<span style='font-size:14px; color:var(--danger);'>Erro interno ao gerar o gráfico.</span>";
+        }
+    }
+
+    function renderizarGrafico(canvasId, oldChart, dados, tipoColor) {
+        var ctx = document.getElementById(canvasId).getContext('2d');
+        if(oldChart) oldChart.destroy(); 
+        
+        if (!dados || dados.length === 0) return null;
+
+        var labels = dados.map(function(d) { return d.isSemVan ? [d.van] : [d.van, "🕒 " + d.horario]; });
+        var datasetEscalados = dados.map(function(d) { return d.operando; });
+        
+        var corPadrao = (tipoColor === "ENTRADA") ? '#10b981' : '#f59e0b';
+        var cores = dados.map(function(d) { return d.isSemVan ? '#cbd5e1' : corPadrao; });
+
+        return new Chart(ctx, {
+            type: 'bar',
+            data: { labels: labels, datasets: [{ label: 'Passageiros', data: datasetEscalados, backgroundColor: cores, borderRadius: 8 }] },
+            options: {
+                responsive: true, maintainAspectRatio: false, layout: { padding: { top: 30 } }, 
+                onClick: function(e, elements) { if (elements.length > 0) { mostrarDetalhesVan(dados[elements[0].index]); } },
+                plugins: {
+                    legend: { display: false },
+                    datalabels: { anchor: 'end', align: 'top', color: 'var(--text-strong)', font: { weight: 'bold', size: 15 }, formatter: function(v) { return v > 0 ? v : ''; } },
+                    tooltip: { 
+                        callbacks: { 
+                            title: function(context) { var d = dados[context[0].dataIndex]; return d.isSemVan ? d.van : d.van + " (" + d.horario + ")"; },
+                            afterLabel: function(context) { return "+ " + dados[context.dataIndex].folgas + " de folga/férias."; } 
+                        } 
+                    }
+                },
+                scales: { y: { beginAtZero: true, suggestedMax: Math.max(...datasetEscalados) + 4 }, x: { ticks: { font: { weight: '600' } } } }
+            }
+        });
+    }
+
+    function mostrarDetalhesVan(info) {
+        var tituloVan = info.isSemVan ? info.van : info.van + " | 🕒 " + info.horario;
+        document.getElementById('bi-detail-title').innerHTML = `<span class="material-icons" style="vertical-align:middle; color:var(--info);">directions_bus</span> Detalhes da Frota: <strong style="color:var(--primary);">${tituloVan}</strong>`;
+        
+        var tb = document.getElementById('tb-bi-detalhes'); tb.innerHTML = "";
+        
+        info.lista.forEach(function(colab) {
+            var badge = ""; var tr = document.createElement('tr');
+            if(colab.status === 'ESCALADO') { badge = `<span class="badge-esc"><span class="material-icons" style="font-size:12px; vertical-align:middle;">check_circle</span> NA ROTA</span>`; } 
+            else if(colab.status === 'FOLGA') { badge = `<span class="badge-fol">FOLGA</span>`; tr.className = "row-semrota"; } 
+            else { badge = `<span class="badge-fer">FÉRIAS</span>`; tr.className = "row-ferias"; }
+
+            tr.innerHTML = `<td style="text-align:left; padding-left:20px; font-weight:700;">${colab.nome}</td><td style="text-align:center; font-weight:600;">${colab.horario}</td><td style="text-align:center;">${badge}</td>`;
+            tb.appendChild(tr);
+        });
+        
+        document.getElementById('bi-detail-box').style.display = 'block';
+        document.getElementById('bi-detail-box').scrollIntoView({behavior: 'smooth'});
+    }
+
+    // ==========================================
+    // GATILHO INSTANTÂNEO DE FILTRO (REAL-TIME)
+    // ==========================================
+    setInterval(function() {
+        let selAdmin = document.getElementById('sel-admin-setor');
+        if (selAdmin && !selAdmin.dataset.biHook) {
+            selAdmin.dataset.biHook = "ativo"; 
+            
+            selAdmin.addEventListener('change', function() {
+                setTimeout(function() {
+                    let viewComp = document.getElementById('bi-view-comparativo');
+                    if (viewComp && viewComp.style.display === 'block') {
+                        if (typeof gerarAnaliseComparativa === 'function') gerarAnaliseComparativa();
+                    } else {
+                        if (typeof atualizarBIFrota === 'function') atualizarBIFrota();
+                    }
+                }, 100); 
+            });
+        }
+    }, 1000);
+</script>
