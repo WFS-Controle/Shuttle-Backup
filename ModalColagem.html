@@ -1,74 +1,39 @@
 <style>
     /* DESIGN CORPORATE V2 - PLANILHA NATIVA (MINI-EXCEL) */
     .wfs-excel-wrap { 
-        width: 100%; 
-        height: 450px; 
-        overflow: auto; 
-        border: 1px solid #d4d4d8; 
-        border-radius: 8px; 
-        background: #fff; 
-        box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        width: 100%; height: 450px; overflow: auto; border: 1px solid #d4d4d8; 
+        border-radius: 8px; background: #fff; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
         margin-top: 15px;
     }
-    
-    .wfs-excel-tbl { 
-        border-collapse: collapse; 
-        min-width: max-content; 
-        font-family: 'Inter', sans-serif; 
-        table-layout: fixed;
-    }
-    
+    .wfs-excel-tbl { border-collapse: collapse; min-width: max-content; font-family: 'Inter', sans-serif; table-layout: fixed; }
     .wfs-excel-tbl th { 
-        background: #f4f4f5; 
-        border: 1px solid #d4d4d8; 
-        padding: 8px 4px; 
-        font-size: 11px; 
-        color: #52525b; 
-        font-weight: 800; 
-        text-align: center; 
-        position: sticky; 
-        top: 0; 
-        z-index: 10; 
-        box-shadow: 0 1px 0 #d4d4d8;
+        background: #f4f4f5; border: 1px solid #d4d4d8; padding: 8px 4px; font-size: 11px; 
+        color: #52525b; font-weight: 800; text-align: center; position: sticky; 
+        top: 0; z-index: 10; box-shadow: 0 1px 0 #d4d4d8;
     }
-    
-    .wfs-excel-tbl td { 
-        border: 1px solid #e4e4e7; 
-        padding: 0; 
-        height: 28px; 
-    }
+    .wfs-excel-tbl td { border: 1px solid #e4e4e7; padding: 0; height: 28px; }
 
-    /* Campos de Input Simulando Células */
+    /* Campos de Input Simulando Células - BLINDADOS CONTRA EXPANSÃO */
     .ex-inp { 
-        width: 100%; 
-        height: 100%; 
-        border: none; 
-        outline: none; 
-        background: transparent; 
-        font-family: 'Inter', sans-serif; 
-        font-size: 12px; 
-        font-weight: 700; 
-        color: #18181b; 
-        padding: 0; 
-        box-sizing: border-box;
+        width: 100%; height: 100%; border: none; outline: none; background: transparent; 
+        font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700; color: #18181b; 
+        padding: 0; box-sizing: border-box !important;
     }
     .ex-inp:focus { background: #e0f2fe; box-shadow: inset 0 0 0 2px #0284c7; }
     
-    /* Colunas Específicas */
     .col-num { width: 40px; text-align: center; background: #fafafa; color: #a1a1aa; font-weight: bold; pointer-events: none; }
     .col-mat { width: 90px; text-align: center; color: #0284c7; }
-    .col-nome { width: 220px; padding-left: 10px; font-weight: 600; color: #10b981; background: #fafafa; pointer-events: none; }
-    .col-dia { width: 35px; text-align: center; cursor: cell; text-transform: uppercase; transition: 0.2s; }
     
-    /* Estado da Folga */
+    /* Removemos o padding fixo daqui para tratar diretamente no JS */
+    .col-nome { width: 100%; font-weight: 600; color: #10b981; background: #fafafa; pointer-events: none; }
+    
+    .col-dia { width: 35px; text-align: center; cursor: cell; text-transform: uppercase; transition: 0.2s; }
     .col-dia.folga { background: #fef2f2 !important; color: #dc2626 !important; font-weight: 900; }
     
-    /* Fixando a Matrícula e Nome na esquerda ao rolar para o lado */
     .sticky-col-mat { position: sticky; left: 0; z-index: 5; background: #fff; }
     .sticky-col-nome { position: sticky; left: 90px; z-index: 5; background: #fafafa; border-right: 2px solid #d4d4d8 !important; }
     .wfs-excel-tbl th.sticky-col-mat { z-index: 11; background: #f4f4f5; }
     .wfs-excel-tbl th.sticky-col-nome { z-index: 11; background: #f4f4f5; border-right: 2px solid #d4d4d8 !important; }
-
 </style>
 
 <div id="modal-paste" class="modal-overlay">
@@ -81,17 +46,22 @@
         
         <div class="wfs-excel-wrap">
             <table class="wfs-excel-tbl">
-                <thead id="ex-head">
-                    </thead>
-                <tbody id="ex-body">
-                    </tbody>
+                <thead id="ex-head"></thead>
+                <tbody id="ex-body"></tbody>
             </table>
         </div>
 
         <div class="row" style="margin-top:20px; justify-content:space-between; align-items:center;">
-            <div style="font-size:12px; color:#52525b; font-weight:bold;">
-                <span class="material-icons" style="font-size:16px; vertical-align:middle; color:#10b981;">check_circle</span> 
-                <span id="contador-linhas">0 colaboradores identificados na grade.</span>
+            <div style="font-size:12px; color:#52525b; font-weight:bold; display:flex; align-items:center; gap:15px;">
+                <span>
+                    <span class="material-icons" style="font-size:16px; vertical-align:middle; color:#10b981;">check_circle</span> 
+                    <span id="contador-linhas">0 colaboradores identificados na grade.</span>
+                </span>
+                
+                <!-- BOTÃO DE REFRESH MANUAL -->
+                <button onclick="forcarAtualizacaoModal(this)" style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:4px; padding:4px 10px; cursor:pointer; font-size:11px; font-weight:900; color:#0284c7; display:flex; align-items:center; gap:5px; transition:0.2s; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+                    <span class="material-icons" style="font-size:14px;">sync</span> ATUALIZAR BASE
+                </button>
             </div>
             <div style="display:flex; gap:10px;">
                 <button onclick="document.getElementById('modal-paste').style.display='none'" class="btn-sec">Cancelar</button>
@@ -102,7 +72,7 @@
 </div>
 
 <script>
-    const LINHAS_GRADE = 60; // Quantidade de linhas em branco geradas na tabela
+    const LINHAS_GRADE = 60; 
 
     function getDiasNoMesSeguinte() { const now = new Date(); return new Date(now.getFullYear(), now.getMonth() + 2, 0).getDate(); }
 
@@ -112,45 +82,38 @@
         gerarPlanilhaVirtual();
     }
 
-    // ==========================================
-    // 1. CONSTRÓI A GRADE IDÊNTICA AO EXCEL
-    // ==========================================
     function gerarPlanilhaVirtual() {
         let maxDias = getDiasNoMesSeguinte();
         let thead = document.getElementById('ex-head');
         let tbody = document.getElementById('ex-body');
         
-        // --- Monta o Cabeçalho ---
+        // A LARGURA DA COLUNA NOME ESTÁ BLINDADA AQUI: 240px exatos.
         let trHead = `<tr>
-            <th style="width:40px;">#</th>
-            <th class="sticky-col-mat" style="width:90px; color:#0284c7;">MATRÍCULA</th>
-            <th class="sticky-col-nome" style="width:220px; color:#10b981;">NOME (AUTO)</th>`;
+            <th style="width:40px; min-width:40px; max-width:40px;">#</th>
+            <th class="sticky-col-mat" style="width:90px; min-width:90px; max-width:90px; color:#0284c7;">MATRÍCULA</th>
+            <th class="sticky-col-nome" style="width:240px; min-width:240px; max-width:240px; color:#10b981;">NOME (AUTO)</th>`;
             
-        for(let i=1; i<=maxDias; i++) { trHead += `<th style="width:35px; color:#f59e0b;">${i < 10 ? '0'+i : i}</th>`; }
+        for(let i=1; i<=maxDias; i++) { trHead += `<th style="width:35px; min-width:35px; max-width:35px; color:#f59e0b;">${i < 10 ? '0'+i : i}</th>`; }
         trHead += `</tr>`;
         thead.innerHTML = trHead;
         
-        // --- Monta as Linhas ---
         tbody.innerHTML = '';
         for(let r = 0; r < LINHAS_GRADE; r++) {
             let tr = document.createElement('tr');
             
-            // Coluna Numero
             let tdNum = document.createElement('td'); 
             tdNum.innerHTML = `<input class="ex-inp col-num" readonly tabindex="-1" value="${r+1}">`;
             tr.appendChild(tdNum);
 
-            // Coluna Matrícula
             let tdMat = document.createElement('td'); tdMat.className = "sticky-col-mat";
             tdMat.innerHTML = `<input class="ex-inp col-mat" data-row="${r}" data-col="mat" maxlength="10" placeholder="...">`;
             tr.appendChild(tdMat);
 
-            // Coluna Nome
             let tdNome = document.createElement('td'); tdNome.className = "sticky-col-nome";
-            tdNome.innerHTML = `<input class="ex-inp col-nome" data-row="${r}" data-col="nome" readonly tabindex="-1" placeholder="...">`;
+            // O SEGREDO: Uma DIV (wrapper) relativa abraça o input, garantindo que o <td> nunca seja distorcido.
+            tdNome.innerHTML = `<div style="position:relative; width:100%; height:100%; display:block;"><input class="ex-inp col-nome" data-row="${r}" data-col="nome" readonly tabindex="-1" placeholder="..."></div>`;
             tr.appendChild(tdNome);
 
-            // Colunas Dias (1 a 31)
             for(let d = 1; d <= maxDias; d++) {
                 let tdDia = document.createElement('td');
                 tdDia.innerHTML = `<input class="ex-inp col-dia" data-row="${r}" data-col="${d}" maxlength="5">`;
@@ -158,20 +121,15 @@
             }
             tbody.appendChild(tr);
         }
-
         configurarEventosPlanilha();
     }
 
-    // ==========================================
-    // 2. MOTOR DE EVENTOS E COLAGEM (O SEGREDO DA BLINDAGEM)
-    // ==========================================
     function configurarEventosPlanilha() {
         let tbody = document.getElementById('ex-body');
 
-        // Captura digitação manual (célula a célula)
         tbody.addEventListener('input', function(e) {
             if(e.target.classList.contains('col-mat')) {
-                e.target.value = e.target.value.replace(/\D/g, ''); // Só números
+                e.target.value = e.target.value.replace(/\D/g, ''); 
                 buscarNomeUnico(e.target.dataset.row, e.target.value);
                 atualizarContador();
             }
@@ -180,7 +138,6 @@
             }
         });
 
-        // Captura o "Ctrl+V" em qualquer lugar da tabela
         tbody.addEventListener('paste', function(e) {
             e.preventDefault();
             let targetInput = e.target;
@@ -190,20 +147,19 @@
             let linhasCopiadas = clipboardData.split(/\r?\n/);
             
             let startRow = parseInt(targetInput.dataset.row);
-            let targetTipo = targetInput.dataset.col; // 'mat' ou numero do dia (1, 2, 3)
+            let targetTipo = targetInput.dataset.col; 
             let isColandoDias = !isNaN(targetTipo);
             let startColIndex = isColandoDias ? parseInt(targetTipo) : 0;
 
             linhasCopiadas.forEach((linhaData, indexLinha) => {
-                if(!linhaData.trim() && linhaData === "") return; // Pula linha em branco no final
+                if(!linhaData.trim() && linhaData === "") return; 
                 
                 let currentRow = startRow + indexLinha;
-                if(currentRow >= LINHAS_GRADE) return; // Protege limite da tabela
+                if(currentRow >= LINHAS_GRADE) return; 
 
                 let colunasCopiadas = linhaData.split('\t');
 
                 if(targetTipo === 'mat') {
-                    // Colando na coluna de matrículas
                     let inputMat = document.querySelector(`.col-mat[data-row="${currentRow}"]`);
                     if(inputMat && colunasCopiadas[0]) {
                         inputMat.value = colunasCopiadas[0].replace(/\D/g, '');
@@ -211,7 +167,6 @@
                     }
                 } 
                 else if (isColandoDias) {
-                    // Colando na grade de dias
                     colunasCopiadas.forEach((celulaData, indexColuna) => {
                         let currentCol = startColIndex + indexColuna;
                         let inputDia = document.querySelector(`.col-dia[data-row="${currentRow}"][data-col="${currentCol}"]`);
@@ -226,32 +181,77 @@
         });
     }
 
-    // ==========================================
-    // 3. FUNÇÕES DE APOIO E LIMPEZA
-    // ==========================================
     function buscarNomeUnico(rowId, mat) {
         let inputNome = document.querySelector(`.col-nome[data-row="${rowId}"]`);
         if(!inputNome) return;
+        
+        let divWrapper = inputNome.parentElement;
+        let btnAntigo = divWrapper.querySelector('.btn-cad-rapido');
+        if(btnAntigo) btnAntigo.remove();
+
+        inputNome.style.textAlign = "left";
+        inputNome.style.paddingLeft = "10px";
+        inputNome.style.paddingRight = "5px";
 
         if(mat.length >= 3) {
-            let pessoa = LISTA_ORIGINAL.find(p => String(p.matricula) === mat);
-            if(pessoa) { 
-                inputNome.value = pessoa.nome; 
+            
+            // 1. PRIMEIRO PROCURA NA MEMÓRIA DE RETENÇÃO (HOLD)
+            if (typeof window.PENDENTES_CADASTRO !== 'undefined') {
+                let pessoaPendente = window.PENDENTES_CADASTRO.find(p => String(p.matricula) === mat);
+                if (pessoaPendente) {
+                    inputNome.value = pessoaPendente.nome;
+                    inputNome.style.color = "#10b981"; // Fica verde imediatamente
+                    return; // Interrompe a busca aqui!
+                }
+            }
+
+            // 2. SE NÃO ESTIVER NA MEMÓRIA, PROCURA NA BASE DE DADOS OFICIAL
+            let pessoaBase = LISTA_ORIGINAL.find(p => String(p.matricula) === mat);
+            if(pessoaBase) { 
+                inputNome.value = pessoaBase.nome; 
                 inputNome.style.color = "#10b981"; 
+                
+                if(pessoaBase.folgas && pessoaBase.folgas.length > 0) {
+                    preencherFolgasNaGrade(rowId, pessoaBase.folgas);
+                }
             } else { 
-                inputNome.value = "⚠️ NÃO CADASTRADO"; 
-                inputNome.style.color = "#ef4444"; 
+                let pessoaBkp = LISTA_BACKUP.find(p => String(p.matricula) === mat);
+                if(pessoaBkp) {
+                    inputNome.value = "🔄 " + pessoaBkp.nome; 
+                    inputNome.style.color = "#0284c7"; 
+                } else {
+                    inputNome.value = "⚠️ NÃO CAD."; 
+                    inputNome.style.color = "#ef4444"; 
+                    inputNome.style.paddingRight = "30px"; 
+                    
+                    let btn = document.createElement('button');
+                    btn.className = 'btn-cad-rapido';
+                    btn.innerHTML = '+';
+                    btn.title = 'Cadastrar Colaborador';
+                    btn.style.cssText = 'position:absolute; right:5px; top:50%; transform:translateY(-50%); background:#dc2626; color:white; border:none; border-radius:50%; width:20px; height:20px; font-size:14px; font-weight:bold; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.2); z-index:10; display:flex; align-items:center; justify-content:center; line-height:1; padding:0;';
+                    btn.onmouseover = () => btn.style.background = "#b91c1c";
+                    btn.onmouseout = () => btn.style.background = "#dc2626";
+                    btn.onclick = function() { abrirModalNovoCadastro(mat); };
+                    divWrapper.appendChild(btn);
+                }
             }
         } else {
             inputNome.value = "";
         }
     }
 
+    function preencherFolgasNaGrade(rowId, folgasArray) {
+        folgasArray.forEach(dia => {
+            let inputDia = document.querySelector(`.col-dia[data-row="${rowId}"][data-col="${dia}"]`);
+            if(inputDia) {
+                inputDia.value = "F";
+                inputDia.classList.add('folga');
+            }
+        });
+    }
+
     function formatarCelulaDia(inputElement, rawValue) {
-        // Limpeza agressiva: arranca aspas, acentos e espaços sujos
         let val = rawValue.replace(/[^a-zA-Z0-9:]/g, '').trim().toUpperCase();
-        
-        // Verifica se o que sobrou é considerado uma folga
         if (['F','FOLGA','DSR','FERIAS','FE','FR','X','COMP','FC','R'].includes(val)) {
             inputElement.value = "F";
             inputElement.classList.add('folga');
@@ -264,38 +264,77 @@
     function atualizarContador() {
         let count = 0;
         document.querySelectorAll('.col-nome').forEach(inp => {
-            if(inp.value && !inp.value.includes("NÃO CADASTRADO")) count++;
+            if(inp.value && !inp.value.includes("NÃO CAD.")) count++;
         });
         document.getElementById('contador-linhas').innerText = `${count} colaboradores válidos identificados.`;
     }
 
-    // ==========================================
-    // 4. PREPARAR DADOS PARA O BANCO
-    // ==========================================
+    function revalidarGradeColagem() {
+        for(let r = 0; r < LINHAS_GRADE; r++) {
+            let matInput = document.querySelector(`.col-mat[data-row="${r}"]`);
+            if(matInput && matInput.value) {
+                buscarNomeUnico(r, matInput.value);
+            }
+        }
+        atualizarContador();
+    }
+
+    // BOTÃO MANUAL DE ATUALIZAÇÃO DO MODAL
+    function forcarAtualizacaoModal(btn) {
+        let textoOriginal = btn.innerHTML;
+        btn.innerHTML = '<span class="material-icons" style="font-size:14px;">sync</span> LENDO...';
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+
+        google.script.run.withSuccessHandler(res => {
+            if(res && !res.erro) {
+                LISTA_ORIGINAL = res.lista || [];
+                LISTA_BACKUP = res.listaBackup || [];
+                revalidarGradeColagem();
+            }
+            btn.innerHTML = textoOriginal;
+            btn.disabled = false;
+            btn.style.opacity = '1';
+        }).carregarDadosSetor(USER.setor, USER.perfil);
+    }
+
     function validarEProcessar() {
         try {
             let maxDias = getDiasNoMesSeguinte();
             let validos = []; 
             let invalidos = [];
 
-            // Varre linha por linha da nossa tabela
             for(let r = 0; r < LINHAS_GRADE; r++) {
                 let mat = document.querySelector(`.col-mat[data-row="${r}"]`).value.trim();
                 let nome = document.querySelector(`.col-nome[data-row="${r}"]`).value;
                 
-                if(!mat) continue; // Pula linha vazia
+                if(!mat) continue; 
                 
-                if(nome.includes("NÃO CADASTRADO")) {
+                if(nome.includes("NÃO CAD.")) {
                     invalidos.push(mat);
                     continue;
                 }
 
-                // Extrai a linha inteira de folgas daquela pessoa
                 let diasLimpos = [];
+                let temFolga = false; // 🔒 NOVA TRAVA: Verificador de escala vazia
+
                 for(let d = 1; d <= 31; d++) {
-                    // Proteção caso o mês tenha 30 dias, a coluna 31 não existirá no HTML
                     let inputDia = document.querySelector(`.col-dia[data-row="${r}"][data-col="${d}"]`);
-                    diasLimpos.push(inputDia ? inputDia.value : ""); 
+                    let valDia = inputDia ? inputDia.value.trim() : "";
+                    diasLimpos.push(valDia); 
+                    
+                    if (valDia !== "") temFolga = true; 
+                }
+
+                // 🔒 NOVA TRAVA: Se a pessoa não tiver nenhum dia preenchido na linha, bloqueia a operação!
+                if (!temFolga) {
+                    let nomeLimpo = nome.replace("🔄 ", "").trim();
+                    return Swal.fire({
+                        title: 'Escala em Branco!', 
+                        html: `O colaborador <b>${nomeLimpo}</b> (Matrícula: ${mat}) está sem nenhum dia de folga preenchido na grade.<br><br>Por favor, preencha a escala ou apague a matrícula da linha antes de prosseguir.`, 
+                        icon: 'error',
+                        confirmButtonColor: '#dc2626'
+                    });
                 }
 
                 validos.push({ matricula: mat, dias: diasLimpos });
@@ -315,11 +354,37 @@
         }
     }
 
-    function enviarAoBackend(dados) {
-        Swal.fire({ title: 'Salvando no Banco...', didOpen: () => Swal.showLoading() });
+    async function enviarAoBackend(dados) {
+        Swal.fire({ title: 'Preparando Sistema...', html: 'Isso pode levar alguns segundos.', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
+        
+        // Verifica se existem fichas retidas em memória
+        if (typeof window.PENDENTES_CADASTRO !== 'undefined' && window.PENDENTES_CADASTRO.length > 0) {
+            
+            // FILTRO CEIFADOR: Só cadastra quem de facto recebeu folgas na grade da planilha! Se o gestor apagou a linha, a ficha vai para o lixo.
+            let cadastrosConfirmados = window.PENDENTES_CADASTRO.filter(pendente => 
+                dados.some(valido => valido.matricula === pendente.matricula)
+            );
+
+            if (cadastrosConfirmados.length > 0) {
+                Swal.fire({ title: 'Processando...', html: '<b>Passo 1/2:</b> Salvando novos cadastros retidos...<br><br><i>Por favor, não feche a janela.</i>', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
+                
+                // Envia 1 a 1 sequencialmente para não dar timeout no Google
+                for (let i = 0; i < cadastrosConfirmados.length; i++) {
+                    let d = cadastrosConfirmados[i];
+                    await new Promise((resolve) => {
+                        google.script.run.withSuccessHandler(resolve).withFailureHandler(resolve).salvarDados(d, USER.usuario, USER.setor, USER.perfil);
+                    });
+                }
+            }
+            window.PENDENTES_CADASTRO = []; // Limpa a fila de retenção da memória
+        }
+        
+        Swal.fire({ title: 'Processando...', html: '<b>Passo 2/2:</b> Gravando as escalas das planilhas...<br><br><i>Finalizando a operação...</i>', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
+        
+        // Agora sim, despacha a escala para cruzar com as pessoas recém-criadas na base
         google.script.run.withSuccessHandler(res => {
             if (!res.success) { Swal.fire('Atenção', res.msg, 'error'); } 
-            else { Swal.fire('Sucesso!', res.msg, 'success'); document.getElementById('modal-paste').style.display = 'none'; carregarDados(); }
-        }).salvarColagemInteligente(dados, USER.perfil);
+            else { Swal.fire('Sucesso TOTAL!', 'A importação da escala e os novos cadastros foram salvos com perfeição.', 'success'); document.getElementById('modal-paste').style.display = 'none'; carregarDados(); }
+        }).salvarColagemInteligente(dados);
     }
 </script>
